@@ -395,6 +395,7 @@ namespace gameswf
 
 		// Clear the render output to 0.
 		memset(s_render_buffer, 0, s_rendering_box * s_rendering_box);
+		int version = sh->get_player()->get_root()->get_movie_version();
 
 		float scale = OVERSAMPLE_FACTOR * fontsize / 1024.0f;		// the EM square is 1024 x 1024
  
@@ -402,8 +403,8 @@ namespace gameswf
 		// the shape will fit in our output.
 		rect	glyph_bounds;
 		sh->compute_bound(&glyph_bounds);
-		float	offset_x = 0.f;
-		float	offset_y = s_rendering_box * 20;	// in twips
+		float	offset_x = 0;
+		float	offset_y = version > 7 ? s_rendering_box * 20 : s_rendering_box;	// in twips
 		if (glyph_bounds.m_x_min < 0)
 		{
 			offset_x -= glyph_bounds.m_x_min;
@@ -415,7 +416,8 @@ namespace gameswf
 		}
 
 		s_render_matrix.set_identity();
-		s_render_matrix.concatenate_scale(scale / 20.f);
+
+		s_render_matrix.concatenate_scale(version > 7 ? scale / 20.0f : scale);
 		s_render_matrix.concatenate_translation(offset_x / scale, offset_y / scale);
 
 		// Tesselate & draw the shape.
