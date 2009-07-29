@@ -602,7 +602,7 @@ int	main(int argc, char *argv[])
 #if TU_CONFIG_LINK_TO_FREETYPE == 1
 			gameswf::set_glyph_provider(gameswf::create_glyph_provider_freetype());
 #else
-			//	TODO:			gameswf::glyph_provider* gp = gameswf::create_glyph_provider_tu();
+			gameswf::set_glyph_provider(gameswf::create_glyph_provider_tu());
 #endif
 		}
 

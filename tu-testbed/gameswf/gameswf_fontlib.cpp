@@ -400,25 +400,16 @@ namespace gameswf
 		float scale = OVERSAMPLE_FACTOR * fontsize / 1024.0f;		// the EM square is 1024 x 1024
  
 		// Look at glyph bounds; adjust origin to make sure
-		// the shape will fit in our output.
+		// the shape will fit in our output in left-top corner.
 		rect	glyph_bounds;
 		sh->compute_bound(&glyph_bounds);
-		float	offset_x = 0;
-		float	offset_y = version > 7 ? s_rendering_box * 20 : s_rendering_box;	// in twips
-		if (glyph_bounds.m_x_min < 0)
-		{
-			offset_x -= glyph_bounds.m_x_min;
-		}
-		if (glyph_bounds.m_y_max > 0)
-		{
-			// lift
-			offset_y -= glyph_bounds.m_y_max;
-		}
+		float offset_x = - glyph_bounds.m_x_min;
+		float offset_y = - glyph_bounds.m_y_min;
 
 		s_render_matrix.set_identity();
 
 		s_render_matrix.concatenate_scale(version > 7 ? scale / 20.0f : scale);
-		s_render_matrix.concatenate_translation(offset_x / scale, offset_y / scale);
+		s_render_matrix.concatenate_translation(offset_x, offset_y);
 
 		// Tesselate & draw the shape.
 		draw_into_software_buffer	accepter;
@@ -432,10 +423,12 @@ namespace gameswf
 		ge->m_bi = render::create_bitmap_info_alpha(s_image_box, s_image_box, s_image_buffer);
 
 		// Fill in rendered_glyph_info.
-		ge->m_bounds.m_x_min = 0;
+		scale = version > 7 ? 1024 * 20 : 1024;
+		scale /= fontsize / 96.0f;
+		ge->m_bounds.m_x_min = offset_x / scale;
 		ge->m_bounds.m_x_max = 1;
-		ge->m_bounds.m_y_min = 1;
-		ge->m_bounds.m_y_max = 0.9999999;
+		ge->m_bounds.m_y_min = offset_y / scale;
+		ge->m_bounds.m_y_max = 1;
 	}
 
 	glyph_provider_tu::glyph_provider_tu()
