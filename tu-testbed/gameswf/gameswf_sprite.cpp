@@ -211,7 +211,7 @@ namespace gameswf
 		{
 			top_ent = this;
 		}
-
+		else
 		// else character which has event is closest to root
 		if (top_te)
 		{
