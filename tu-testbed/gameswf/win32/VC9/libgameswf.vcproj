@@ -477,7 +477,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gameswf_fontlib.h"
+				RelativePath="..\..\gameswf_fontlib.cpp"
 				>
 			</File>
 			<File
@@ -837,7 +837,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gameswf_fontlib.cpp"
+				RelativePath="..\..\gameswf_fontlib.h"
 				>
 			</File>
 			<File

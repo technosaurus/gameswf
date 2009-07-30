@@ -217,9 +217,9 @@ namespace gameswf
 					bounds.m_y_max *= yscale;
 
 					// for device font xscale = yscale
-					yscale = mat.get_y_scale();
-					float radians = mat.get_rotation();
-					mat.set_scale_rotation(yscale, yscale, radians);
+//					yscale = mat.get_y_scale();
+//					float radians = mat.get_rotation();
+//					mat.set_scale_rotation(yscale, yscale, radians);
 					render::draw_bitmap(mat, g.m_bitmap_info.get_ptr(), bounds, uv_bounds, transformed_color);
 				}
 				else
@@ -246,7 +246,8 @@ namespace gameswf
 
 
 	text_character_def::text_character_def(player* player, movie_definition_sub* root_def) :
-		character_def(player), m_root_def(root_def), m_use_flashtype(false), m_grid_fit(0), m_thickness(0.0f), m_sharpness(0.0f)
+		character_def(player), m_root_def(root_def), m_use_flashtype(false), m_grid_fit(0), m_thickness(0.0f), m_sharpness(0.0f),
+		m_is_glyphs_drawn(false)
 	{
 		assert(m_root_def);
 	}
@@ -361,6 +362,51 @@ namespace gameswf
 	void	text_character_def::display(character* inst)
 	// Draw the string.
 	{
+
+		// try glyph provider
+		if (m_is_glyphs_drawn == false)
+		{
+			m_is_glyphs_drawn = true;
+
+			glyph_provider* fp = get_glyph_provider();
+			if (fp)
+			{
+				for (int i = 0; i < m_text_glyph_records.size(); i++)
+				{
+					text_glyph_record&	rec = m_text_glyph_records[i];
+					rec.m_style.resolve_font(m_root_def);
+
+					font*	fnt = rec.m_style.m_font;
+					if (fnt == NULL)
+					{
+						continue;
+					}
+
+					for (int j = 0; j < rec.m_glyphs.size(); j++)
+					{
+						glyph& g = rec.m_glyphs[j];
+						if (g.m_glyph_index < 0)
+						{
+							continue;
+						}
+
+						int char_code = fnt->get_code_by_index(g.m_glyph_index);
+						if (char_code < 0)
+						{
+							continue;
+						}
+
+						g.m_shape_glyph = fnt->get_glyph_by_index(g.m_glyph_index);
+						if (g.m_shape_glyph)
+						{
+							g.m_fontsize = (int) rec.m_style.m_text_height / 20.0f;
+							g.m_bitmap_info = fp->get_char_image(g.m_shape_glyph, char_code, fnt->get_name(), fnt->is_bold(), fnt->is_italic(), 
+								g.m_fontsize,	&g.m_bounds, NULL);
+						}
+					}
+				}
+			}
+		}
 		display_glyph_records(m_matrix, inst, m_text_glyph_records, m_root_def);
 	}
 

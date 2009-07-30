@@ -452,6 +452,12 @@ namespace gameswf
 			const tu_string& fontname, bool is_bold, bool is_italic, int fontsize,
 			rect* bounds, float* advance)
 	{
+		shape_character_def*	sh = cast_to<shape_character_def>(shape_glyph);
+		if (sh == NULL)
+		{
+			return NULL;
+		}
+
 		int flags = is_bold ? 2 : 0;
 		flags |= is_italic ? 1 : 0;
 		int glyph_code = (Uint8) fontsize << 24 | (Uint8) flags << 16 | xcode;
@@ -462,33 +468,45 @@ namespace gameswf
 		{
 			if (ga->get(glyph_code, &ge))
 			{
-				*bounds = ge.m_bounds;
-				*advance = ge.m_advance;
+				if (bounds)
+				{
+					*bounds = ge.m_bounds;
+				}
+				if (advance)
+				{
+					*advance = ge.m_advance;
+				}
+
+			//	printf("glyph_provider_tu: finded %08X: %s\n", glyph_code, fontname.c_str());
 				return ge.m_bi;
 			}
 		}
 		else
 		{
 			// add new font
+		//	printf("glyph_provider_tu: added font %s\n", fontname.c_str());
 			ga = new glyph_array();
-			m_glyph.add(fontname, ga);
+			m_glyph[fontname] = ga;
 		}
 
-		shape_character_def*	sh = cast_to<shape_character_def>(shape_glyph);
-		if (sh)
+		render_glyph(&ge, sh, fontsize);
+
+		// store glyph
+		ge.m_advance = 0;
+		ga->add(glyph_code, ge);
+
+		if (bounds)
 		{
-			render_glyph(&ge, sh, fontsize);
-
-			// store glyph
-			ge.m_advance = 0;
-			ga->add(glyph_code, ge);
-
 			*bounds = ge.m_bounds;
-			*advance = ge.m_advance;
-			return ge.m_bi;
-
 		}
-		return NULL;
+
+		if (advance)
+		{
+			*advance = ge.m_advance;
+		}
+
+	//	printf("glyph_provider_tu: added %08X: %s\n", glyph_code, fontname.c_str());
+		return ge.m_bi;
 	}
 
 	glyph_provider*	create_glyph_provider_tu()

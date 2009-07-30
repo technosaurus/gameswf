@@ -235,8 +235,15 @@ namespace gameswf
 			fe->m_ge.add(key, ge);
 		}
 
-		*bounds = ge->m_bounds;
-		*advance = ge->m_advance;
+		if (bounds)
+		{
+			*bounds = ge->m_bounds;
+		}
+
+		if (advance)
+		{
+			*advance = ge->m_advance;
+		}
 
 		return ge->m_bi.get_ptr();
 	}

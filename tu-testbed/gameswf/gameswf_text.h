@@ -108,6 +108,9 @@ namespace gameswf
 		float m_thickness;
 		float m_sharpness;
 
+		// it's used to draw glyphs on startup
+		bool m_is_glyphs_drawn;
+
 		text_character_def(player* player, movie_definition_sub* root_def);
 
 		void	read(stream* in, int tag_type, movie_definition_sub* m);
