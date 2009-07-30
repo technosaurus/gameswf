@@ -25,7 +25,7 @@ namespace gameswf
 
 	// Size (in TWIPS) of the box that the glyph should stay within.
 
-	static const int	OVERSAMPLE_BITS = 2;
+	static const int	OVERSAMPLE_BITS = 1;
 	static const int	OVERSAMPLE_FACTOR = (1 << OVERSAMPLE_BITS);
 
 	// The nominal size of the final antialiased glyphs stored in
@@ -40,7 +40,7 @@ namespace gameswf
 	static int	s_image_box = s_glyph_nominal_size;
 
 	// The dimensions of the textures that the glyphs get packed into.
-	static const int	GLYPH_CACHE_TEXTURE_SIZE = 256;
+	static const int	GLYPH_CACHE_TEXTURE_SIZE = 128;
 
 	// How much space to leave around the individual glyph image.
 	// This should be at least 1.  The bigger it is, the smoother
@@ -352,33 +352,22 @@ namespace gameswf
 	}
 
 	static void antialias()
-	// Shrink the results down by a factor of 4x, to get antialiasing.
 	{
-		int ia = 0;
-		int ja = 0;
-		for (int j = 0; j < s_rendering_box; j = j + OVERSAMPLE_FACTOR)
+		// Resample.  Simple average 2x2 --> 1
+		int new_h = s_rendering_box >> 1;
+		int new_w = s_rendering_box >> 1;
+		for (int j = 0; j < new_h; j++) 
 		{
-			ia = 0;
-			for (int i = 0; i < s_rendering_box; i = i + OVERSAMPLE_FACTOR)
+			Uint8*	out = ((Uint8*) s_image_buffer) + j * new_w;
+			Uint8*	in = ((Uint8*) s_render_buffer) + (j << 1) * s_rendering_box;
+			for (int i = 0; i < new_w; i++)
 			{
-				// Sum up the contribution to this output texel.
-				int	sum = 0;
-				for (int jj = j; jj < j + OVERSAMPLE_FACTOR; jj++)
-				{
-					for (int ii = i; ii < i + OVERSAMPLE_FACTOR; ii++)
-					{
-						sum += s_render_buffer[jj * s_rendering_box + ii];	// texel
-					}
-				}
-
-				assert(ja < s_image_box);
-				assert(ia < s_image_box);
-
-				sum >>= OVERSAMPLE_FACTOR;
-				s_image_buffer[ja * s_image_box + ia] = (Uint8) sum;
-				ia++;
+				int	sum;
+				sum = (*in + *(in + 1) + *(in + s_rendering_box) + *(in + 1 + s_rendering_box));
+				*out = sum >> 2;
+				out++;
+				in += 2;
 			}
-			ja++;
 		}
 	}
 
