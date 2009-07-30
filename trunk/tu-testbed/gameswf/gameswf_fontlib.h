@@ -27,7 +27,7 @@ namespace gameswf
 			rect* bounds, float* advance);
 
 		private:
-			stringi_hash<glyph_array*> m_glyph;	// fontame-glyphs-glyph
+			stringi_hash< glyph_array* > m_glyph;	// fontame-glyphs-glyph
 	};
 
 }	// end namespace gameswf

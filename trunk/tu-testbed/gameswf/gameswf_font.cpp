@@ -362,6 +362,18 @@ namespace gameswf
 		return glyph_index < m_glyphs.size() ? m_glyphs[glyph_index].get_ptr() : NULL;
 	}
 
+	int	font::get_code_by_index(int glyph_index) const
+	{
+		for (hash<Uint16, int, simple_code_hash<Uint16> >::const_iterator it = m_code_table.begin(); it != m_code_table.end(); ++it)
+		{
+			if (it->second == glyph_index)
+			{
+				return it->first;
+			}
+		}
+		return -1;
+	}
+
 	float	font::get_kerning_adjustment(int last_code, int code) const
 	// Return the adjustment in advance between the given two
 	// characters.  Normally this will be 0; i.e. the 

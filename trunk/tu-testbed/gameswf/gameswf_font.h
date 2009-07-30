@@ -72,6 +72,8 @@ namespace gameswf
 
 		int	get_glyph_count() const { return m_glyphs.size(); }
 		shape_character_def*	get_glyph_by_index(int glyph_index) const;
+		int	get_code_by_index(int glyph_index) const;
+
 		void	read(stream* in, int tag_type, movie_definition_sub* m);
 		void	read_font_info(stream* in, int tag_type);
 		void	read_font_alignzones(stream* in, int tag_type);
