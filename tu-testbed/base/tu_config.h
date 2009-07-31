@@ -125,5 +125,6 @@
 // SDL is used by default
 //#define TU_USE_OPENAL
 #define TU_USE_SDL
+//#define TU_USE_OGLES
 
 #endif // TU_CONFIG_H
