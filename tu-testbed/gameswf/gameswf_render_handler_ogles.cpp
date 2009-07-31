@@ -903,6 +903,7 @@ struct render_handler_ogles : public gameswf::render_handler
 	// Intended for textured glyph rendering.
 	{
 		assert(bi);
+		bi->layout();
 
 		apply_color(color);
 
@@ -913,8 +914,16 @@ struct render_handler_ogles : public gameswf::render_handler
 		d.m_x = b.m_x + c.m_x - a.m_x;
 		d.m_y = b.m_y + c.m_y - a.m_y;
 
-		bi->layout();
-		
+		GLfloat squareVertices[8];
+		squareVertices[0] = a.m_x;
+		squareVertices[1] = a.m_y;
+		squareVertices[2] = b.m_x;
+		squareVertices[3] = b.m_y;
+		squareVertices[4] = c.m_x;
+		squareVertices[5] = c.m_y;
+		squareVertices[6] = d.m_x;
+		squareVertices[7] = d.m_y;
+	
 		GLfloat squareTextureCoords[8];
 		squareTextureCoords[0] = uv_coords.m_x_min;
 		squareTextureCoords[1] = uv_coords.m_y_min;
@@ -925,15 +934,22 @@ struct render_handler_ogles : public gameswf::render_handler
 		squareTextureCoords[6] = uv_coords.m_x_max;
 		squareTextureCoords[7] = uv_coords.m_y_max;
 
-		glTexCoordPointer(2, GL_SHORT, 0, squareTextureCoords);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glTexCoordPointer(2, GL_FLOAT, 0, squareTextureCoords);
+
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glVertexPointer(2, GL_FLOAT, 0, squareVertices);
 
 		glEnable(GL_LINE_SMOOTH);
 		glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
 		glDisable(GL_LINE_SMOOTH);
 
 		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		glDisableClientState(GL_VERTEX_ARRAY);
+
+		glDisable(GL_TEXTURE_2D);
 	}
 	
 	bool test_stencil_buffer(const gameswf::rect& bound, Uint8 pattern)
