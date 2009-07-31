@@ -1396,12 +1396,14 @@ void bitmap_info_ogl::layout()
 
 			case image::image_base::ALPHA:
 			{
+#if GENERATE_MIPMAPS
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
+#endif
 				int	w = m_suspended_image->m_width;
 				int	h = m_suspended_image->m_height;
 				create_texture(GL_ALPHA, w, h, m_suspended_image->m_data, 0);
 
+#if GENERATE_MIPMAPS
 				// Build mips.
 				int	level = 1;
 				while (w > 1 || h > 1)
@@ -1410,6 +1412,7 @@ void bitmap_info_ogl::layout()
 					create_texture(GL_ALPHA, w, h, m_suspended_image->m_data, level);
 					level++;
 				}
+#endif
 
 				break;
 			}

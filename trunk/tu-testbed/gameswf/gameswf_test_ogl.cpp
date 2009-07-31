@@ -596,8 +596,16 @@ int	main(int argc, char *argv[])
 
 				gameswf::set_sound_handler(sound);
 			}
+
+#ifdef TU_USE_SDL
 			render = gameswf::create_render_handler_ogl();
 			gameswf::set_render_handler(render);
+#endif
+
+#ifdef TU_USE_OGLES
+			render = gameswf::create_render_handler_ogles();
+			gameswf::set_render_handler(render);
+#endif
 
 #if TU_CONFIG_LINK_TO_FREETYPE == 1
 			gameswf::set_glyph_provider(gameswf::create_glyph_provider_freetype());
