@@ -37,7 +37,6 @@ namespace gameswf
 	static int	s_glyph_nominal_size = 96;
 
 	static int	s_rendering_box = OVERSAMPLE_FACTOR * s_glyph_nominal_size;
-	static int	s_image_box = s_glyph_nominal_size;
 
 	// The dimensions of the textures that the glyphs get packed into.
 	static const int	GLYPH_CACHE_TEXTURE_SIZE = 128;
@@ -353,12 +352,14 @@ namespace gameswf
 
 	static void antialias()
 	{
+		memset(s_image_buffer, 0, GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE);
+
 		// Resample.  Simple average 2x2 --> 1
 		int new_h = s_rendering_box >> 1;
 		int new_w = s_rendering_box >> 1;
 		for (int j = 0; j < new_h; j++) 
 		{
-			Uint8*	out = ((Uint8*) s_image_buffer) + j * new_w;
+			Uint8*	out = ((Uint8*) s_image_buffer) + j * GLYPH_CACHE_TEXTURE_SIZE;
 			Uint8*	in = ((Uint8*) s_render_buffer) + (j << 1) * s_rendering_box;
 			for (int i = 0; i < new_w; i++)
 			{
@@ -406,14 +407,14 @@ namespace gameswf
 
 		antialias();
 
-//		print_glyph(s_render_buffer, s_rendering_box, s_rendering_box);
-//		print_glyph(s_image_buffer, s_image_box, s_image_box);
+	//	print_glyph(s_render_buffer, s_rendering_box, s_rendering_box);
+	//	print_glyph(s_image_buffer, GLYPH_CACHE_TEXTURE_SIZE, GLYPH_CACHE_TEXTURE_SIZE);
 
-		ge->m_bi = render::create_bitmap_info_alpha(s_image_box, s_image_box, s_image_buffer);
+		ge->m_bi = render::create_bitmap_info_alpha(GLYPH_CACHE_TEXTURE_SIZE, GLYPH_CACHE_TEXTURE_SIZE, s_image_buffer);
 
 		// Fill in rendered_glyph_info.
 		scale = version > 7 ? 1024 * 20 : 1024;
-		scale /= fontsize / 96.0f;
+		scale /= fontsize / (float) GLYPH_CACHE_TEXTURE_SIZE;
 		ge->m_bounds.m_x_min = offset_x / scale;
 		ge->m_bounds.m_x_max = 1;
 		ge->m_bounds.m_y_min = offset_y / scale;
@@ -423,7 +424,7 @@ namespace gameswf
 	glyph_provider_tu::glyph_provider_tu()
 	{
 		s_render_buffer = new Uint8[s_rendering_box * s_rendering_box];
-		s_image_buffer = new Uint8[s_image_box * s_image_box];
+		s_image_buffer = new Uint8[GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE];
 	}
 
 	glyph_provider_tu::~glyph_provider_tu()
