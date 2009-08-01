@@ -400,6 +400,16 @@ namespace gameswf
 						if (g.m_shape_glyph)
 						{
 							g.m_fontsize = (int) rec.m_style.m_text_height / 20.0f;
+
+							// find final glyph fontsize
+							matrix m = inst->get_world_matrix();
+							float yscale = m.get_y_scale();
+							g.m_fontsize = int(yscale * g.m_fontsize);
+							if (g.m_fontsize > 96)
+							{
+								g.m_fontsize = 96;
+							}
+
 							g.m_bitmap_info = fp->get_char_image(g.m_shape_glyph, char_code, fnt->get_name(), fnt->is_bold(), fnt->is_italic(), 
 								g.m_fontsize,	&g.m_bounds, NULL);
 						}
