@@ -216,10 +216,13 @@ namespace gameswf
 					bounds.m_y_min *= yscale;
 					bounds.m_y_max *= yscale;
 
-					// for device font xscale = yscale
-//					yscale = mat.get_y_scale();
-//					float radians = mat.get_rotation();
-//					mat.set_scale_rotation(yscale, yscale, radians);
+					// for device font xscale = yscale, applied for edit_text_character only
+					if (cast_to<edit_text_character>(inst) != NULL)
+					{
+						yscale = mat.get_y_scale();
+						float radians = mat.get_rotation();
+						mat.set_scale_rotation(yscale, yscale, radians);
+					}
 					render::draw_bitmap(mat, g.m_bitmap_info.get_ptr(), bounds, uv_bounds, transformed_color);
 				}
 				else
