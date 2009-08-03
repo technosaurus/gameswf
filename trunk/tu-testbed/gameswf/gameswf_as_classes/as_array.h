@@ -31,6 +31,7 @@ namespace gameswf
 
 		exported_module virtual bool	get_member(const tu_stringi& name, as_value* val);
 		exported_module virtual bool	set_member(const tu_stringi& name, const as_value& val);
+		virtual void clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr);
 
 		exported_module as_array(player* player);
 		exported_module virtual const char* to_string();
