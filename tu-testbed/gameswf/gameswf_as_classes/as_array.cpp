@@ -477,4 +477,11 @@ namespace gameswf
 		}
 		return as_object::set_member(name, val);
 	}
+
+	void as_array::clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr)
+	{
+		m_array.clear();
+		as_object::clear_refs(visited_objects, this_ptr);
+	}
+
 };
