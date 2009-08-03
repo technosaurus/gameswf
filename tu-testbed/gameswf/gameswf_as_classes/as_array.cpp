@@ -480,8 +480,26 @@ namespace gameswf
 
 	void as_array::clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr)
 	{
-		m_array.clear();
+		// Is it a reentrance ?
+		if (visited_objects->get(this, NULL))
+		{
+			return;
+		}
+
+		// will be set in as_object::clear_refs
+//		visited_objects->set(this, true);
+
 		as_object::clear_refs(visited_objects, this_ptr);
+
+		// clear display list
+		for (int i = 0; i < size(); i++)
+		{
+			as_object* obj = m_array[i].to_object();
+			if (obj)
+			{
+				obj->clear_refs(visited_objects, this_ptr);
+			}
+		}
 	}
 
 };
