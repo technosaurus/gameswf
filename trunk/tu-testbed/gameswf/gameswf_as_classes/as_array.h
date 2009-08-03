@@ -29,19 +29,20 @@ namespace gameswf
 			else return as_object::is(class_id);
 		}
 
+		exported_module virtual bool	get_member(const tu_stringi& name, as_value* val);
+		exported_module virtual bool	set_member(const tu_stringi& name, const as_value& val);
+
 		exported_module as_array(player* player);
 		exported_module virtual const char* to_string();
-		exported_module void push(const as_value& val);
-		exported_module void remove(int index, as_value* val);
-		exported_module void insert(int index, const as_value& val);
-		exported_module void pop(as_value* val);
-		exported_module void erase(const tu_stringi& index);
-		exported_module void clear();
+		exported_module void push(const as_value& val) { m_array.push_back(val); }
+		exported_module void remove(int index) { m_array.remove(index); }
+		exported_module void insert(int index, const as_value& val)	{ m_array.insert(index, val); }
 		exported_module void sort(int options, as_function* compare_function);
-		exported_module virtual void copy_to(as_object* target);
-		exported_module int size();
+		exported_module int size() const { return m_array.size(); }
+		exported_module void resize(int size) { m_array.resize(size); }
 
 		tu_string m_string_value;
+		array<as_value> m_array;
 	};
 
 	// this is "_global.Array" object
