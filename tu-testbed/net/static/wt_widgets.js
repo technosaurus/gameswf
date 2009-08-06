@@ -317,7 +317,7 @@ function wt_slider(id, name, val, min, max)
 		this.initial_value = this.slidervalue.innerHTML;
 		
 		this.update_slider(event);
-
+		event.preventDefault();
 		return false;
 	}
 
@@ -328,6 +328,7 @@ function wt_slider(id, name, val, min, max)
 			this.is_tracking = false;
 			wt_tracking_widget = undefined;
 			document.forms[0].submit();
+			event.preventDefault();
 		}
 		return false;
 	}
@@ -337,12 +338,14 @@ function wt_slider(id, name, val, min, max)
 		if (this.is_tracking)
 		{
 			this.update_slider(event);
+			event.preventDefault();
 		}
 		return false;
 	}
 
 	this.mouseout = function(event)
 	{
+		event.preventDefault();
 		return false;
 	}
 
@@ -363,7 +366,7 @@ function wt_slider(id, name, val, min, max)
 		var x = this.width * (value - this.min) / (this.max - this.min);
 		x = fclamp(x, 0, this.width);
 
-		this.sliderpointer.style.left = (this.sliderbody_x + x + 20 - 5) + "px";
+		this.sliderpointer.style.left = (x - 7) + "px";
 	}
 
 	this.stop_tracking = function()
@@ -382,18 +385,20 @@ function wt_slider(id, name, val, min, max)
 	html += event_handlers(this.id) + ' style="padding-left: 20px; padding-right: 20px">';
 
 	// Slider line.
-	html += '<hr style="width: ' + this.width + 'px; height: 28px; ';
-	html += 'border: none; border-top: 13px solid #FFFFFF; border-bottom: 13px solid #FFFFFF; background-color: #A0A0A0;">';
+	html += '<div style="position: relative; width: ' + this.width + 'px; height: 2px; margin: 14px; margin-right: 0px; margin-left: 0px;';
+	html += 'border: none; background-color: #A0A0A0;">';
 
 	// Pointer
-	html += '<hr style="width: 12px; height: 20px; background-color: #A0A0A0; border: 1px solid black; border-left: 1px solid #E0E0E0; border-top: 1px solid #E0E0E0; " id="sliderpointer' + this.id + '">';
+	html += '<hr style="position: absolute; top: -18px; left: 0px; width: 12px; height: 20px; background-color: #A0A0A0; border: 1px solid black; border-left: 1px solid #E0E0E0; border-top: 1px solid #E0E0E0; padding: 0px;" id="sliderpointer' + this.id + '">';
+
+	html += '</div>';  // end slider line
 	
 	make_incrementer = function(inc)
 	{
 		var html = "<td><table cellpadding=0 cellspacing=0><tr>";
-		html += '<td><span onclick=\'return 1\'><a href="javascript:void(0)"><img src="/static/images/wt_up.png" border=0></a></span></td>';
+		html += '<td><span onclick=\'return 1\'><a href="javascript:void(0)" style="text-decoration:none;"><b>&uArr;</b></a></span></td>';
 		html += '<td rowspan=2>' + inc + '&nbsp;&nbsp;&nbsp;</td></tr><tr>';
-		html += '<td><span onclick=\'return 1\'><a href="javascript:void(0)"><img src="/static/images/wt_down.png" border=0>hi</a></span></td>';
+		html += '<td><span onclick=\'return 1\'><a href="javascript:void(0)" style="text-decoration:none;"><b>&dArr;</b></a></span></td>';
 		html += '</tr></table></td>';
 		return html;
 	}
@@ -403,9 +408,9 @@ function wt_slider(id, name, val, min, max)
 	html += "</table>";
 	
 	html += '</td></tr></table>';
-	html += '<style>';
-	html += '#sliderpointer' + this.id + ' { position: absolute; top: 0px; left: 0px; padding: 0px; }';
-	html += '</style>';
+	//html += '<style>';
+	//html += '#sliderpointer' + this.id + ' { position: absolute; top: 0px; left: 0px; padding: 0px; }';
+	//html += '</style>';
 
 	document.write(html);
 	document.close();
@@ -417,7 +422,7 @@ function wt_slider(id, name, val, min, max)
 
 	this.sliderbody_x = absolute_left(this.sliderbody);
 	this.sliderbody_y = absolute_top(this.sliderbody);
-	this.sliderpointer.style.top = this.sliderbody_y - 4;
+	//xxxx this.sliderpointer.style.top = this.sliderbody_y - 4;
 	
 	this.hiddenvalue = document.getElementsByName(this.id)[0];
 
@@ -436,6 +441,8 @@ function wt_slider(id, name, val, min, max)
 
 function wt_color_picker(id, name, initial_value)
 {
+	var me = this;
+
 	wt_register(id, this);
 	
 	this.name = name;
@@ -449,6 +456,7 @@ function wt_color_picker(id, name, initial_value)
 
 	this.mouseevent = function(event)
 	{
+		event.preventDefault();
 		if (this.is_tracking_slider) {
 			// Deal with slider.
 			var vertical = page_offset_y(event) - this.hsv_y;
@@ -620,10 +628,12 @@ function wt_color_picker(id, name, initial_value)
 	{
 		this.hsv = [ h, s, v ];
 		
-		this.hsv_cursor.style.left = (h / 360 * 360) + this.hsv_x - 4;
-		this.hsv_cursor.style.top = (1 - s) * 99 + this.hsv_y - 12;
+		this.hsv_cursor.style.left = (h / 360 * 360) - 5;
+		this.hsv_cursor.style.top = (1 - s) * 99 - 5;
 
-		this.sliderpointer.style.top = (1 - v) * (this.height - 1) + this.hsv_y - 14;
+		this.hsv_darkener.style.opacity = 1 - v;
+
+		this.sliderpointer.style.top = (1 - v) * (this.height - 1) - 14;
 	}
 
 	this.set_cursors_hsv = function(h, s, v)
@@ -659,12 +669,17 @@ function wt_color_picker(id, name, initial_value)
 	html += '<input type=hidden name="' + this.id + '" value=""></input>';
 
 	// Color Hue/Sat picker.
-	html += '<div id="hsv_body' + this.id + '" style="background-image: url(\'images/wt_hsv.png\'); width: 360px; height: 100px;" ';
-	html += event_handlers(this.id) + '></div>';
+	html += '<div id="hsv_body' + this.id + '" style="position: relative; background-image: url(\'static/images/wt_hsv.png\'); width: 360px; height: 100px;" ';
+	html += event_handlers(this.id) + '>';
+
+	html += '<div id="hsv_darkener' + this.id + '" style="position: absolute; width: 360px; height: 100px; background-color: #000; opacity: 0.5;"';
+	html += '</div>\n';
 
 	// HSV cursor.
-	html += '<hr id="hsv_cursor' + this.id + '" style="position:absolute; border: 2px solid black; height: 9px; width: 9px" ';
-	html += event_handlers(this.id) + '>';
+	html += '<div id="hsv_cursor' + this.id + '" style="position:absolute; border: 2px solid black; height: 7px; width: 7px" ';
+	html += event_handlers(this.id) + '></div>';
+
+	html += '</div>\n';  // close hue/sat div.
 
 	html += '</td><td>';
 	
@@ -673,17 +688,16 @@ function wt_color_picker(id, name, initial_value)
 	html += event_handlers(this.id) + '>';
 
 	// Line.
-	html += '<hr id="sliderline' + this.id + '" style="width: 28px; height: 100px; ';
-	html += 'border: none; border-left: 13px solid #FFFFFF; border-right: 13px solid #FFFFFF; background-color: #A0A0A0;">';
+	html += '<div id="sliderline' + this.id + '" style="position: relative; width: 2px; height: 100px; margin: 14px; ';
+	html += 'border: none; background-color: #A0A0A0;">';
 	
 	// Pointer.
-	html += '<hr style="width: 20px; height: 12px; background-color: #A0A0A0; border: 1px solid black; border-left: 1px solid #E0E0E0; border-top: 1px solid #E0E0E0; " id="sliderpointer' + this.id + '">';
+	html += '<hr style="position: absolute; left: -10px; width: 20px; height: 12px; background-color: #A0A0A0; border: 1px solid black; border-left: 1px solid #E0E0E0; border-top: 1px solid #E0E0E0; " id="sliderpointer' + this.id + '">';
+
+	html += '</div>\n';  // close line div
 
 	html += '</span>';
 	html += '</td></tr></table>';
-	html += '<style>';
-	html += '#sliderpointer' + this.id + ' { position: absolute; top: 0px; left: 0px; padding: 0px; }';
-	html += '</style>';
 
 	document.write(html);
 	document.close();
@@ -694,6 +708,7 @@ function wt_color_picker(id, name, initial_value)
 	this.hsv_y = absolute_top(this.hsv_body);
 
 	this.color_value = document.getElementById("colorvalue" + this.id);
+	this.hsv_darkener = document.getElementById("hsv_darkener" + this.id);
 	this.hsv_cursor = document.getElementById("hsv_cursor" + this.id);
 	this.sliderline = document.getElementById("sliderline" + this.id);
 	this.sliderpointer = document.getElementById("sliderpointer" + this.id);
@@ -704,8 +719,8 @@ function wt_color_picker(id, name, initial_value)
 	
 	this.sliderline_x = absolute_left(this.sliderline);
 	this.sliderline_y = absolute_top(this.sliderline);
-	this.sliderpointer.style.top = this.sliderline_y + 1;
-	this.sliderpointer.style.left = this.sliderline_x + 4;
+	//xxx this.sliderpointer.style.top = this.sliderline_y + 1;
+	//xxx this.sliderpointer.style.left = this.sliderline_x + 4;
 	
 	this.set_cursors(this.initial_value);
 }
