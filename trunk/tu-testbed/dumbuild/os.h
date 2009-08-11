@@ -20,6 +20,10 @@ Res EraseFile(const string& path);
 
 bool FileExists(const string& path);
 
+bool DirExists(const string& dirpath);
+
+bool ExeExists(const string& dirpath);
+
 // Execute a sub-process.  dir gives the current directory of the
 // subprocess; cmd_line gives the command line with arguments.
 //

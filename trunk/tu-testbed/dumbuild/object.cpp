@@ -49,7 +49,10 @@ Res Object::Init(const Context* context, const string& name,
                  const Json::Value& value) {
   name_ = name;
   context->LogVerbose(StringPrintf("Object::Init(): %s\n", name_.c_str()));
-  assert(IsCanonicalName(name_));
+  if (!IsCanonicalName(name_)) {
+    return Res(ERR_PARSE, "Error: object name '" + name_ +
+               "' is not canonical.");
+  }
 
   return Res(OK);
 }

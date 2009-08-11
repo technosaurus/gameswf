@@ -14,7 +14,8 @@
 
 #define JSON_ASSERT_UNREACHABLE assert( false )
 #define JSON_ASSERT( condition ) assert( condition );  // @todo <= change this into an exception throw
-#define JSON_ASSERT_MESSAGE( condition, message ) if (!( condition )) throw std::runtime_error( message );
+//#define JSON_ASSERT_MESSAGE( condition, message ) if (!( condition )) throw std::runtime_error( message );
+#define JSON_ASSERT_MESSAGE( condition, message ) assert(condition)
 
 namespace Json {
 
@@ -1016,6 +1017,8 @@ Value::resolveReference( const char *key,
    if ( it != value_.map_->end()  &&  (*it).first == actualKey )
       return (*it).second;
 
+   // Inserting new null value.
+   keys_in_insert_order_.push_back(actualKey.c_str());  // tulrich
    ObjectValues::value_type defaultValue( actualKey, null );
    it = value_.map_->insert( it, defaultValue );
    Value &value = (*it).second;

@@ -392,6 +392,9 @@ Reader::readObject( Token &tokenStart )
          break;
       if ( tokenName.type_ == tokenObjectEnd  &&  name.empty() )  // empty object
          return true;
+      // tulrich: allow comma at end of object initializer!!!!
+      if ( tokenName.type_ == tokenObjectEnd )
+         return true;
       if ( tokenName.type_ != tokenString )
          break;
       
@@ -749,7 +752,10 @@ std::istream& operator>>( std::istream &sin, Value &root )
     // tulrich: old std libs may not have runtime_error!  Replace w/
     // std::exception.  BTW I wish this code did not use exceptions at
     // all.
-    if (!ok) throw std::exception();
+    if (!ok) {
+       assert(0);
+       exit(1);
+    }
     
     return sin;
 }

@@ -3,6 +3,7 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
+#include <set>
 #include "file_deps.h"
 #include "config.h"
 #include "context.h"
@@ -33,7 +34,7 @@ bool ParseIncludeLine(const char* line, string* header_file, bool* is_quoted) {
   assert(header_file);
   assert(is_quoted);
 
-  // Skip leading space.
+  // Skip leading spaces.
   while (char c = *line) {
     if (c != ' ' && c != '\t') {
       break;
@@ -41,11 +42,25 @@ bool ParseIncludeLine(const char* line, string* header_file, bool* is_quoted) {
     line++;
   }
 
-  if (strncmp("#include", line, 8) != 0) {
+  if (line[0] != '#') {
+    // Not a preprocessor directive.
+    return false;
+  }
+  line++;
+
+  // Skip more spaces.
+  while (char c = *line) {
+    if (c != ' ' && c != '\t') {
+      break;
+    }
+    line++;
+  }
+
+  if (strncmp("include", line, 7) != 0) {
     // No #include on this line.
     return false;
   }
-  line += 8;
+  line += 7;
 
   for (;;) {
     char c = *line;
@@ -172,7 +187,8 @@ Res GetIncludes(const Target* t, const Context* context,
     // Write the deps file.
     FILE* fp = ostore->Write(deps_file_id);
     if (!fp) {
-      context->LogVerbose("Unabled to write deps to ostore for file: " + src_path);
+      context->LogVerbose("Unable to write deps to ostore for file: " +
+                          src_path);
     } else {
       fprintf(fp, "# includes %s\n", src_path.c_str());
       for (size_t i = 0; i < includes->size(); i++) {
@@ -194,9 +210,37 @@ Res GetIncludes(const Target* t, const Context* context,
 }
 
 // DepHash(src_file) = Hash(src_file) + sum(for d in deps: DepHash(d))
+//
+// The include_chain helps us avoid infinite recursion in case of
+// include cycles.
 Res AccumulateSrcFileDepHash(const Target* t, const Context* context,
                              const string& src_path, const string& inc_dirs_str,
+                             std::set<string>* included,
                              Hash* dep_hash) {
+  if (included->find(src_path) != included->end()) {
+    // Recursive include; we've already visited this file.  Don't
+    // recurse infinitely!
+    *dep_hash << src_path;
+    return Res(OK);
+  }
+
+  // Insert src_path into the include chain, and remove it before we
+  // return.
+  struct AutoInsertRemove {
+   public:
+    AutoInsertRemove(std::set<string>* included, const string& file) :
+        included_(included), file_(file) {
+      included_->insert(file_);
+    }
+    ~AutoInsertRemove() {
+      included_->erase(file_);
+    }
+   private:
+    std::set<string>* included_;
+    const string& file_;
+  };
+  AutoInsertRemove auto_insert_remove(included, src_path);
+
   Hash content_hash;
   Res res = context->ComputeOrGetFileContentHash(src_path, &content_hash);
   if (!res.Ok()) {
@@ -223,9 +267,10 @@ Res AccumulateSrcFileDepHash(const Target* t, const Context* context,
   if (!res.Ok()) {
     return res;
   }
+
   for (size_t i = 0; i < includes.size(); i++) {
     res = AccumulateSrcFileDepHash(t, context, includes[i], inc_dirs_str,
-                                   &computed_dep_hash);
+                                   included, &computed_dep_hash);
     if (!res.Ok()) {
       return res;
     }
@@ -243,8 +288,10 @@ Res AccumulateObjFileDepHash(const Target* t, const Context* context,
                              const string& src_path,
                              const string& inc_dirs_str, Hash* dep_hash) {
   const Config* config = context->GetConfig();
-  *dep_hash << src_path << inc_dirs_str << config->compile_environment() <<
-    config->compile_template();
+  *dep_hash << src_path << inc_dirs_str << config->compile_environment()
+            << config->prefilled_compile_template();
 
-  return AccumulateSrcFileDepHash(t, context, src_path, inc_dirs_str, dep_hash);
+  std::set<string> included;
+  return AccumulateSrcFileDepHash(t, context, src_path, inc_dirs_str,
+                                  &included, dep_hash);
 }

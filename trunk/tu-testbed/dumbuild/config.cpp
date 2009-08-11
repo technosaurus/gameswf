@@ -6,82 +6,127 @@
 #include "config.h"
 #include "util.h"
 
+Config::Config() {
+}
+
+const string& Config::GetVar(const string& varname) const {
+  map<string, string>::const_iterator it = vars_.find(varname);
+  if (it == vars_.end()) {
+    return empty_string_;
+  }
+  return it->second;
+}
+
+void Config::SetVar(const string& varname, const string& new_value) {
+  vars_[varname] = new_value;
+}
+
 Res Config::Init(const Context* context, const string& name,
-                 const Json::Value& value) {
-  Res res = Object::Init(context, name, value);
+                 const Json::Value& init_object) {
+  Res res = Object::Init(context, name, init_object);
   if (!res.Ok()) {
     return res;
   }
 
-  assert(value.isObject() || value.isArray());
+  assert(init_object.isObject());
 
   string null_char;
   null_char += '\0';
 
-  if (value.isMember("compile_environment")) {
-    res = ParseValueStringOrMap(value["compile_environment"], "=", null_char,
-                                &compile_environment_);
-    if (!res.Ok()) {
-      res.AppendDetail("\nwhile initializing compile_environment of config: " +
-                       name_);
-      return res;
+  struct MapVarInfo {
+    const string varname;
+    const string separator;
+    const string separator2;
+  } const var_infos[] = {
+    { "compile_environment", "=", null_char },
+    { "compile_template", "=", ";" },
+    { "link_template", "=", ";" },
+    { "lib_template", "=", ";" },
+  };
+
+  const vector<string>& keys = init_object.keys_in_insert_order();
+  for (int key_i = 0; key_i < keys.size(); key_i++) {
+    const string& key = keys[key_i];
+    assert(init_object.isMember(key));
+    const Json::Value& value = init_object[key];
+
+    if (key == "name" || key == "type") {
+      // Skip these.
+      continue;
     }
-    compile_environment_ += null_char;
+
+    bool found_mapvar = false;
+    for (int i = 0; i < ARRAY_SIZE(var_infos); i++) {
+      const MapVarInfo& mvi = var_infos[i];
+      if (mvi.varname == key) {
+        found_mapvar = true;
+        string result;
+        res = ParseValueStringOrMap(context, this, value, mvi.separator,
+                                    mvi.separator2, &result);
+        if (!res.Ok()) {
+          return res;
+        }
+        if (mvi.separator2 == null_char) {
+          result += mvi.separator2;
+        }
+        SetVar(mvi.varname, result);
+        break;
+      }
+    }
+
+    if (!found_mapvar) {
+      // Set a normal string var.
+      if (!IsValidVarname(key)) {
+        return Res(ERR_PARSE, string("config defines invalid variable name '") +
+                   key + "'.  Varnames must be alphanumeric, "
+                   "plus - or _");
+      }
+      
+      string result;
+      res = ParseValueStringOrMap(context, this, value, "=", ";", &result);
+      if (!res.Ok()) {
+        return res;
+      }
+
+      if (key == "inherit") {
+        // Inherit values from the named config.
+        const Config* parent = context->GetNamedConfig(result.c_str());
+        if (!parent) {
+          return Res(ERR_PARSE, "config '" + this->name() +
+                     "' can't inherit from unknown config '" +
+                     result + "'");
+        }
+        InheritVars(parent);
+      } else {
+        SetVar(key, result);
+      }
+    }
   }
 
-  if (value.isMember("compile_template")) {
-    res = ParseValueStringOrMap(value["compile_template"], "=", ";",
-                                &compile_template_);
-    if (!res.Ok()) {
-      res.AppendDetail("\nwhile initializing compile_template of config: " +
-                       name_);
-      return res;
-    }
-  }
+  // Pre-fill our compile template.
+  res = ::FillTemplate(GetVar("compile_template"), vars_, true,
+                       &prefilled_compile_template_);
 
-  if (value.isMember("link_template")) {
-    res = ParseValueStringOrMap(value["link_template"], "=", ";",
-                                &link_template_);
-    if (!res.Ok()) {
-      res.AppendDetail("\nwhile initializing link_template of config: " +
-                       name_);
-      return res;
-    }
-  }
+  return res;
+}
 
-  if (value.isMember("lib_template")) {
-    res = ParseValueStringOrMap(value["lib_template"], "=", ";",
-                                &lib_template_);
-    if (!res.Ok()) {
-      res.AppendDetail("\nwhile initializing lib_template of config: " +
-                       name_);
-      return res;
-    }
+void Config::InsertVarsIntoMap(map<string, string>* out) const {
+  for (map<string, string>::const_iterator it = vars_.begin();
+       it != vars_.end();
+       ++it) {
+    (*out)[it->first] = it->second;
   }
+}
 
-  if (value.isMember("obj_extension")) {
-    if (!value["obj_extension"].isString()) {
-      return Res(ERR_PARSE, "obj_extension must be a string value"
-                 "\nwhile initializing obj_extension of config: " + name_);
-    }
-    obj_extension_ = value["obj_extension"].asString();
+// Copy all variables from *parent.
+void Config::InheritVars(const Config* parent) {
+  for (map<string, string>::const_iterator it = parent->vars_.begin();
+       it != parent->vars_.end();
+       ++it) {
+    SetVar(it->first, it->second);
   }
+}
 
-  if (value.isMember("lib_extension")) {
-    if (!value["lib_extension"].isString()) {
-      return Res(ERR_PARSE, "lib_extension must be a string value"
-                 "\nwhile initializing lib_extension of config: " + name_);
-    }
-    lib_extension_ = value["lib_extension"].asString();
-  }
-
-  if (value.isMember("exe_extension")) {
-    if (!value["exe_extension"].isString()) {
-      return Res(ERR_PARSE, "exe_extension must be a string value"
-                 "\nwhile initializing exe_extension of config: " + name_);
-    }
-    exe_extension_ = value["exe_extension"].asString();
-  }
-
-  return Res(OK);
+Res Config::FillTemplate(const string& template_string, string* out) const {
+  return ::FillTemplate(template_string, vars_, false, out);
 }

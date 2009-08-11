@@ -18,6 +18,10 @@ Res PrepareCompileVars(const Target* t, const Context* context,
                        CompileInfo* ci, Hash* dep_hash) {
   const Config* config = context->GetConfig();
 
+  // Pull all config vars into ci, so they can be used in template
+  // replacement.
+  config->InsertVarsIntoMap(&ci->vars_);
+
   bool build_all = context->rebuild_all();
 
   string inc_dirs_str;
@@ -114,7 +118,8 @@ Res DoCompile(const Target* t, const Context* context, const CompileInfo& ci) {
   const Config* config = context->GetConfig();
 
   string cmd;
-  Res res = FillTemplate(config->compile_template(), ci.vars_, &cmd);
+  Res res = FillTemplate(config->prefilled_compile_template(), ci.vars_, false,
+			 &cmd);
   if (!res.Ok()) {
     res.AppendDetail("\nwhile preparing compiler command line for " +
                      t->name());
