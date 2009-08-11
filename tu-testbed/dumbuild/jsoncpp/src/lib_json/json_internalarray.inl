@@ -47,8 +47,11 @@ public: // overridden from ValueArrayAllocator
       if ( minNewIndexCount > newIndexCount )
          newIndexCount = minNewIndexCount;
       void *newIndexes = realloc( indexes, sizeof(Value*) * newIndexCount );
-      if ( !newIndexes )
-         throw std::bad_alloc();
+      if ( !newIndexes ) {
+         //throw std::bad_alloc();
+         assert(0);
+         exit(1);
+      }
       indexCount = newIndexCount;
       indexes = static_cast<Value **>( newIndexes );
    }
@@ -111,8 +114,11 @@ public: // overridden from ValueArrayAllocator
       if ( minNewIndexCount > newIndexCount )
          newIndexCount = minNewIndexCount;
       void *newIndexes = realloc( indexes, sizeof(Value*) * newIndexCount );
-      if ( !newIndexes )
-         throw std::bad_alloc();
+      if ( !newIndexes ) {
+         //throw std::bad_alloc();
+         assert(0);
+         exit(1);
+      }
       indexCount = newIndexCount;
       indexes = static_cast<Value **>( newIndexes );
    }

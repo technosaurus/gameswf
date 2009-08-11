@@ -100,7 +100,7 @@ Res ExeTarget::Process(const Context* context) {
     // Link.
     context->Log(StringPrintf("Linking %s\n", name_.c_str()));
     string cmd;
-    res = FillTemplate(config->link_template(), ci.vars_, &cmd);
+    res = FillTemplate(config->link_template(), ci.vars_, false, &cmd);
     if (!res.Ok()) {
       res.AppendDetail("\nwhile preparing linker command line for " + name_);
       return res;

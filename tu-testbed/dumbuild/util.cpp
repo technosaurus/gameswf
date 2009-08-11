@@ -3,12 +3,13 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#include "util.h"
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdarg.h>
+
+#include "util.h"
+#include "eval.h"
 
 string StripExt(const string& filename) {
   size_t last_slash = filename.rfind('/');
@@ -19,6 +20,17 @@ string StripExt(const string& filename) {
   }
   
   return filename;
+}
+
+string GetExt(const string& filename) {
+  size_t last_slash = filename.rfind('/');
+  size_t last_dot = filename.rfind('.');
+  if (last_dot != string::npos
+      && (last_slash == string::npos || last_slash < last_dot)) {
+    return string(filename, last_dot + 1, filename.length());
+  }
+  
+  return string();
 }
 
 void TrimTrailingWhitespace(string* str) {
@@ -32,7 +44,7 @@ void TrimTrailingWhitespace(string* str) {
   }
 }
 
-static bool IsValidVarname(const string& varname) {
+bool IsValidVarname(const string& varname) {
   if (varname.length() == 0) {
     return false;
   }
@@ -52,8 +64,9 @@ static bool IsValidVarname(const string& varname) {
 }
 
 Res FillTemplate(const string& template_string,
-		 const map<string, string>& vars,
-		 string* out) {
+                 const map<string, string>& vars,
+                 bool tolerate_missing_vars,
+                 string* out) {
   assert(out);
   out->clear();
 
@@ -79,9 +92,16 @@ Res FillTemplate(const string& template_string,
       map<string, string>::const_iterator it =
         vars.find(varname);
       if (it == vars.end()) {
-        out->clear();
-        return Res(ERR, "Template contained varname '" + varname +
-                   "' but no variable of that name is defined.");
+        if (tolerate_missing_vars) {
+          // Pass the variable through, without replacing it.
+          out->append(p, end + 1 - p);
+          p = end + 1;
+          continue;
+        } else {
+          out->clear();
+          return Res(ERR, "Template contained varname '" + varname +
+                     "' but no variable of that name is defined.");
+        }
       }
       // Insert text up to the var.
       out->append(p, begin - p);
@@ -92,42 +112,51 @@ Res FillTemplate(const string& template_string,
       // Non-varname character; don't replace anything here.
       out->append(p, end + 1 - p);
       p = end + 1;
-      break;
     }
   }
   return Res(OK);
 }
 
-Res ParseValueStringOrMap(const Json::Value& val,
+Res ParseValueStringOrMap(const Context* ctx,
+                          Config* cfg,
+                          const Json::Value& val,
                           const string& equals_string,
-			  const string& separator_string,
+                          const string& separator_string,
                           string* out) {
   if (val.isString()) {
     *out = val.asString();
   } else if (val.isArray()) {
-    // TODO
-    assert(0);
+    // Evaluate as a lisp expression.
+    Res err = EvalToString(ctx, cfg, val, out);
+    if (!err.Ok()) {
+      err.AppendDetail("in ParseValueStringOrMap(): array eval of '" +
+                       val.toStyledString() + "'");
+      return err;
+    }
   } else if (val.isObject()) {
+    // Evaluate as a named-value map.
     bool done_first = false;
     out->clear();
     for (Json::Value::iterator it = val.begin(); it != val.end(); ++it) {
       if (!it.key().isString()) {
         return Res(ERR_PARSE,
-		   "ParseValueStringOrMap(): key is not a string: '" +
+                   "ParseValueStringOrMap(): key is not a string: '" +
                    it.key().toStyledString());
       }
-      if (!(*it).isString()) {
-        return Res(ERR_PARSE, "ParseValueStringOrMap(): key '" +
-                   it.key().asString() +
-                   "' does not have a string value: " +
-                   (*it).toStyledString());
+      const Json::Value& map_val = *it;
+      string result;
+      Res err = EvalToString(ctx, cfg, map_val, &result);
+      if (!err.Ok()) {
+        err.AppendDetail("in ParseValueStringOrMap(): key '" +
+                         it.key().toStyledString() + "'");
+        return err;
       }
       if (done_first) {
         *out += separator_string;
       }
       *out += it.key().asString();
       *out += equals_string;
-      *out += (*it).asString();
+      *out += result;
       done_first = true;
     }
   }

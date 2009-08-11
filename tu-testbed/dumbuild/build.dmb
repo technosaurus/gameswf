@@ -28,6 +28,7 @@
       "config.cpp",
       "context.cpp",
       "dumbuild.cpp",
+      "eval.cpp",
       "exe_target.cpp",
       "file_deps.cpp",
       "generic_target.cpp",

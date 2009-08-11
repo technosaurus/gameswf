@@ -5,7 +5,7 @@
 
 // In dumbuild, a Context holds all the info necessary to execute a
 // build.  This includes all the relevant Targets, plus any additional
-// config data.
+// config data, and the values of command-line arguments.
 
 #ifndef CONTEXT_H_
 #define CONTEXT_H_
@@ -61,6 +61,11 @@ class Context {
     return main_target_;
   }
 
+  // Access to command-line args.  The name should be the long name of
+  // the argument (in case it has a short alias).
+  bool HasArg(const char* argname) const;
+  string GetArgValue(const char* argname) const;
+
   string AbsoluteFile(const string& canonical_path,
                            const string& filename);
   string AbsoluteFile(const char* canonical_path, const char* filename) {
@@ -115,6 +120,16 @@ class Context {
     return active_config_;
   }
 
+  // Returns the named config, if any.  Returns NULL if we don't have
+  // the named config.
+  Config* GetNamedConfig(const char* name) const {
+    map<string, Config*>::const_iterator it = configs_.find(name);
+    if (it == configs_.end()) {
+      return NULL;
+    }
+    return it->second;
+  }
+
   Res ComputeOrGetFileContentHash(const string& filename,
                                   Hash* out) const;
 
@@ -148,6 +163,7 @@ class Context {
   const Config* active_config_;
   map<string, Config*> configs_;
   map<string, Target*> targets_;
+  map<string, string> args_;
   bool log_verbose_;
   string specified_target_;
   string main_target_name_;

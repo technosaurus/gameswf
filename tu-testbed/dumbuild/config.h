@@ -14,6 +14,8 @@
 
 class Config : public Object {
  public:
+  Config();
+
   virtual Res Init(const Context* context,
 		   const string& name,
 		   const Json::Value& value);
@@ -22,37 +24,45 @@ class Config : public Object {
     return this;
   }
 
-  const string& compile_environment() const {
-    return compile_environment_;
+  const string& GetVar(const string& varname) const;
+  void SetVar(const string& varname, const string& value);
+
+  // Some important vars.
+  const string& prefilled_compile_template() const {
+    return prefilled_compile_template_;
   }
-  const string& compile_template() const {
-    return compile_template_;
+  const string& compile_environment() const {
+    return GetVar("compile_environment");
   }
   const string& link_template() const {
-    return link_template_;
+    return GetVar("link_template");
   }
   const string& lib_template() const {
-    return lib_template_;
+    return GetVar("lib_template");
   }
   const string& obj_extension() const {
-    return obj_extension_;
+    return GetVar("obj_extension");
   }
   const string& lib_extension() const {
-    return lib_extension_;
+    return GetVar("lib_extension");
   }
   const string& exe_extension() const {
-    return exe_extension_;
+    return GetVar("exe_extension");
   }
 
-  // TODO
+  // Fill the given template using values assigned to our variables.
+  // Result goes into *out.
+  Res FillTemplate(const string& template_string, string* out) const;
+
+  // Copy all our vars into the given map.
+  void InsertVarsIntoMap(map<string, string>* out) const;
+
  private:
-  string compile_environment_;
-  string compile_template_;
-  string link_template_;
-  string lib_template_;
-  string obj_extension_;
-  string lib_extension_;
-  string exe_extension_;
+  void InheritVars(const Config* parent);
+  
+  string empty_string_;
+  map<string, string> vars_;
+  string prefilled_compile_template_;
 };
 
 #endif  // CONFIG_H_

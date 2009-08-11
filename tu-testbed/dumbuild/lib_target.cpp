@@ -94,7 +94,7 @@ Res LibTarget::Process(const Context* context) {
   if (do_build) {
     // Archive the objs to make the lib
     string cmd;
-    res = FillTemplate(config->lib_template(), ci.vars_, &cmd);
+    res = FillTemplate(config->lib_template(), ci.vars_, false, &cmd);
     if (!res.Ok()) {
       res.AppendDetail("\nwhile preparing lib command line for " + name_);
       return res;

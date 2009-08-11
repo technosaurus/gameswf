@@ -259,6 +259,30 @@ bool FileExists(const string& path) {
   return true;
 }
 
+bool DirExists(const string& path) {
+  struct stat stat_info;
+  int err = stat(path.c_str(), &stat_info);
+  if (err) {
+    return false;
+  }
+  return (stat_info.st_mode & S_IFDIR) != 0;
+}
+
+bool ExeExists(const string& path) {
+  struct stat stat_info;
+  int err = stat(path.c_str(), &stat_info);
+  if (err) {
+    return false;
+  }
+#ifdef _WIN32
+  string extension = GetExt(path);
+  return stricmp(extension.c_str(), "exe") == 0 ||
+	  stricmp(extension.c_str(), "dll") == 0;
+#else  // not _WIN32
+  return (stat_info.st_mode & S_IXUSR) != 0;
+#endif  // not _WIN32
+}
+
 Res EraseFile(const string& path) {
   if (_unlink(path.c_str()) == 0) {
     return Res(OK);

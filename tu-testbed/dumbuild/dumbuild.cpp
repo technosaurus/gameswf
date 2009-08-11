@@ -46,6 +46,7 @@
 #include "config.h"
 #include "context.h"
 #include "dmb_types.h"
+#include "eval.h"
 #include "os.h"
 #include "res.h"
 #include "target.h"
@@ -56,9 +57,9 @@ void PrintUsage() {
          "\n"
          "options include:\n"
          "\n"
-         "  -c      clean\n"
-         "  -n      don't actually execute the commands\n"
-         "  -v      verbose mode (show what commands would be executed)\n"
+         "  -c <config>   specify a configuration\n"
+         "  -n            don't actually execute the commands\n"
+         "  -v            verbose mode (show what commands would be executed)\n"
          );
 }
 
@@ -136,7 +137,13 @@ Res FindRoot(string* absolute_root,
   return Res(OK);
 }
 
+void InitStatics() {
+  InitEval();
+}
+
 int main(int argc, const char** argv) {
+  InitStatics();
+
   Context context;
   Res res;
 

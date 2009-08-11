@@ -8,4 +8,5 @@
 
 void RunSelfTests() {
   TestPath();
+  TestEval();
 }

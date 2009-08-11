@@ -375,6 +375,11 @@ namespace Json {
       iterator begin();
       iterator end();
 
+      // tulrich
+      const std::vector<std::string>& keys_in_insert_order() const { 
+         return keys_in_insert_order_;
+      }
+
    private:
       Value &resolveReference( const char *key, 
                                bool isStatic );
@@ -442,6 +447,9 @@ namespace Json {
       int memberNameIsStatic_ : 1;       // used by the ValueInternalMap container.
 # endif
       CommentInfo *comments_;
+
+      // tulrich
+      std::vector<std::string> keys_in_insert_order_;
    };
 
 
