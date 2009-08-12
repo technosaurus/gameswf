@@ -76,7 +76,7 @@ class HashCache {
 
   bool Get(const T& key, Hash* h) {
     assert(h);
-    map<T, Hash>::const_iterator it = map_.find(key);
+    typename map<T, Hash>::const_iterator it = map_.find(key);
     if (it != map_.end()) {
       *h = it->second;
       return true;

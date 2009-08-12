@@ -1,18 +1,20 @@
-#!/bin/bash
+#!/bin/sh
 
 # Simple build script to bootstrap a build of dmb.exe
 #
-# This scirpt should work on Linux and other posix systems using gcc.
+# This script should work on Linux and other posix systems using gcc.
 #
 # It should also work on cygwin if you have MSVC set up in your path.
 
 sysname=`uname`
 
-sources=../../compile_util.cpp \
+sources="../../compile_util.cpp \
     ../../config.cpp \
     ../../context.cpp \
     ../../dumbuild.cpp \
+    ../../eval.cpp \
     ../../exe_target.cpp \
+    ../../file_deps.cpp \
     ../../hash.cpp \
     ../../hash_util.cpp \
     ../../lib_target.cpp \
@@ -24,7 +26,7 @@ sources=../../compile_util.cpp \
     ../../sha1.cpp \
     ../../target.cpp \
     ../../test.cpp \
-    ../../util.cpp
+    ../../util.cpp"
 
 
 # cygwin with MSVC:
