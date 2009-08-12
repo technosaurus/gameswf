@@ -1,4 +1,8 @@
 [
+  //
+  // msvc
+  //
+
   // Basic stuff common to all msvc configs.
   { "name": "vc-base",
     "type": "config",
@@ -100,6 +104,11 @@
     "cflags": ["fill", "${cflags} -Ox -DNDEBUG"],
   },
 
+  //
+  // gcc
+  //
+  
+  // Basic stuff common to all gcc configs.
   { "name": "gcc-base",
     "type": "config",
 
@@ -144,6 +153,11 @@
     "cflags": ["fill", "${cflags} -O2"],
   },
 
+  //
+  // default
+  //
+
+  // default config picks one of the detected toolsets.
   { "name": "default",
     "type": "config",
 
