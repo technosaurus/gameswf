@@ -69,7 +69,7 @@ Res ExeTarget::Process(const Context* context) {
 
   assert(dep_hash_was_set_ == false);
   dep_hash_.Reset();
-  dep_hash_ << "exe_dep_hash" << name_ << config->link_template();
+  dep_hash_ << "exe_dep_hash" << name_ << config->prefilled_link_template();
 
   CompileInfo ci;
   res = PrepareCompileVars(this, context, &ci, &dep_hash_);
@@ -100,7 +100,8 @@ Res ExeTarget::Process(const Context* context) {
     // Link.
     context->Log(StringPrintf("Linking %s\n", name_.c_str()));
     string cmd;
-    res = FillTemplate(config->link_template(), ci.vars_, false, &cmd);
+    res = FillTemplate(config->prefilled_link_template(), ci.vars_, false,
+                       &cmd);
     if (!res.Ok()) {
       res.AppendDetail("\nwhile preparing linker command line for " + name_);
       return res;

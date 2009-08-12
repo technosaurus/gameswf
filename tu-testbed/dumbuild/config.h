@@ -31,14 +31,14 @@ class Config : public Object {
   const string& prefilled_compile_template() const {
     return prefilled_compile_template_;
   }
+  const string& prefilled_lib_template() const {
+    return prefilled_lib_template_;
+  }
+  const string& prefilled_link_template() const {
+    return prefilled_link_template_;
+  }
   const string& compile_environment() const {
     return GetVar("compile_environment");
-  }
-  const string& link_template() const {
-    return GetVar("link_template");
-  }
-  const string& lib_template() const {
-    return GetVar("lib_template");
   }
   const string& obj_extension() const {
     return GetVar("obj_extension");
@@ -63,6 +63,8 @@ class Config : public Object {
   string empty_string_;
   map<string, string> vars_;
   string prefilled_compile_template_;
+  string prefilled_lib_template_;
+  string prefilled_link_template_;
 };
 
 #endif  // CONFIG_H_

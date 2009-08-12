@@ -64,7 +64,7 @@ Res LibTarget::Process(const Context* context) {
 
   assert(dep_hash_was_set_ == false);
   dep_hash_.Reset();
-  dep_hash_ << "lib_dep_hash" << name_ << config->lib_template();
+  dep_hash_ << "lib_dep_hash" << name_ << config->prefilled_lib_template();
   
   CompileInfo ci;
   res = PrepareCompileVars(this, context, &ci, &dep_hash_);
@@ -94,7 +94,7 @@ Res LibTarget::Process(const Context* context) {
   if (do_build) {
     // Archive the objs to make the lib
     string cmd;
-    res = FillTemplate(config->lib_template(), ci.vars_, false, &cmd);
+    res = FillTemplate(config->prefilled_lib_template(), ci.vars_, false, &cmd);
     if (!res.Ok()) {
       res.AppendDetail("\nwhile preparing lib command line for " + name_);
       return res;

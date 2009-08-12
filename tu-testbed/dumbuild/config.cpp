@@ -33,15 +33,14 @@ Res Config::Init(const Context* context, const string& name,
   string null_char;
   null_char += '\0';
 
+  // We handle some variables specially, treating them as key/value
+  // pairs, with certain separators used to pack them into a string.
   struct MapVarInfo {
     const string varname;
     const string separator;
     const string separator2;
   } const var_infos[] = {
     { "compile_environment", "=", null_char },
-    { "compile_template", "=", ";" },
-    { "link_template", "=", ";" },
-    { "lib_template", "=", ";" },
   };
 
   const vector<string>& keys = init_object.keys_in_insert_order();
@@ -103,9 +102,24 @@ Res Config::Init(const Context* context, const string& name,
     }
   }
 
-  // Pre-fill our compile template.
+  // Pre-fill our compile, lib, & link templates.
   res = ::FillTemplate(GetVar("compile_template"), vars_, true,
                        &prefilled_compile_template_);
+  if (!res.Ok()) {
+    return res;
+  }
+
+  res = ::FillTemplate(GetVar("lib_template"), vars_, true,
+                       &prefilled_lib_template_);
+  if (!res.Ok()) {
+    return res;
+  }
+
+  res = ::FillTemplate(GetVar("link_template"), vars_, true,
+                       &prefilled_link_template_);
+  if (!res.Ok()) {
+    return res;
+  }
 
   return res;
 }
