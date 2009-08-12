@@ -100,7 +100,7 @@
     "cflags": ["fill", "${cflags} -Ox -DNDEBUG"],
   },
 
-  { "name": "gcc-debug",
+  { "name": "gcc-base",
     "type": "config",
 
     // This is the environment that the compiler runs in.  dmb's
@@ -113,17 +113,35 @@
     "obj_extension": ".o",
     "lib_extension": ".a",
     "exe_extension": "",
+
+    "cflags": "-Wall",
     
     // This is the command-line template used to invoke the compiler.
-    "compile_template": "/usr/bin/gcc -Wall ${inc_dirs} -c ${src_list}",
+    "compile_template": "/usr/bin/gcc ${cflags} ${inc_dirs} -c ${src_list}",
 
     // This is the command-line template used to invoke the linker.
-    "link_template": "/usr/bin/gcc -o ${basename} -g ${obj_list} ${lib_list} -lstdc++",
+    "link_template": "/usr/bin/gcc -o ${basename} ${cflags} ${obj_list} ${lib_list} -lstdc++",
 
     // This is the command-line template used to combine object files into a library.
     "lib_template": "/usr/bin/ar rc ${basename}.a ${obj_list}",
 
     "detected": ["file_exists", "/usr/bin/gcc"],
+  },
+    
+  { "name": "gcc-debug",
+    "type": "config",
+
+    "inherit": ":gcc-base",
+
+    "cflags": ["fill", "${cflags} -g"],
+  },
+
+  { "name": "gcc-release",
+    "type": "config",
+
+    "inherit": ":gcc-base",
+
+    "cflags": ["fill", "${cflags} -O2"],
   },
 
   { "name": "default",

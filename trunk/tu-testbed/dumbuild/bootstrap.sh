@@ -28,7 +28,6 @@ sources="../../compile_util.cpp \
     ../../test.cpp \
     ../../util.cpp"
 
-
 # cygwin with MSVC:
 if echo "$sysname" | grep -q 'CYGWIN' ; then
   mkdir -p dmb-out/bootstrap

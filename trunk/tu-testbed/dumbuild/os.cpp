@@ -211,9 +211,11 @@ Res RunCommand(const string& dir, const string& cmd_line,
 #ifdef _WIN32
 #define GETCWD _getcwd
 #define CHDIR _chdir
+#define UNLINK _unlink
 #else
 #define GETCWD getcwd
 #define CHDIR chdir
+#define UNLINK unlink
 #endif
 
 string GetCurrentDir() {
@@ -284,7 +286,7 @@ bool ExeExists(const string& path) {
 }
 
 Res EraseFile(const string& path) {
-  if (_unlink(path.c_str()) == 0) {
+  if (UNLINK(path.c_str()) == 0) {
     return Res(OK);
   }
   return Res(ERR_FILE_ERROR, "Can't unlink " + path);

@@ -44,7 +44,7 @@ void Hash::operator=(const Hash& b) {
 }
 
 bool Hash::operator==(const Hash& b) const {
-  for (int i = 0; i < sizeof(h_); i++) {
+  for (size_t i = 0; i < sizeof(h_); i++) {
     if (h_[i] != b.h_[i]) {
       return false;
     }
@@ -53,7 +53,7 @@ bool Hash::operator==(const Hash& b) const {
 }
 
 bool Hash::operator<(const Hash& b) const {
-  for (int i = 0; i < sizeof(h_); i++) {
+  for (size_t i = 0; i < sizeof(h_); i++) {
     if (h_[i] < b.h_[i]) {
       return true;
     } else if (h_[i] > b.h_[i]) {

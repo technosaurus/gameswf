@@ -86,7 +86,6 @@ Res PrepareCompileVars(const Target* t, const Context* context,
   }
 
   // Check deps.
-  bool deps_changed = false;
   for (size_t i = 0; i < t->dep().size(); i++) {
     Target* this_dep = context->GetTarget(t->dep()[i]);
     assert(this_dep);
@@ -137,7 +136,7 @@ Res DoCompile(const Target* t, const Context* context, const CompileInfo& ci) {
 
   // Write build markers for the just-compiled sources.
   Hash obj_dep_hash;
-  for (int i = 0; i < ci.src_list_.size(); i++) {
+  for (size_t i = 0; i < ci.src_list_.size(); i++) {
     const string& src_path = ci.src_list_[i];
     obj_dep_hash.Reset();
     Res res = AccumulateObjFileDepHash(

@@ -45,7 +45,7 @@ Res Config::Init(const Context* context, const string& name,
   };
 
   const vector<string>& keys = init_object.keys_in_insert_order();
-  for (int key_i = 0; key_i < keys.size(); key_i++) {
+  for (size_t key_i = 0; key_i < keys.size(); key_i++) {
     const string& key = keys[key_i];
     assert(init_object.isMember(key));
     const Json::Value& value = init_object[key];
@@ -56,7 +56,7 @@ Res Config::Init(const Context* context, const string& name,
     }
 
     bool found_mapvar = false;
-    for (int i = 0; i < ARRAY_SIZE(var_infos); i++) {
+    for (size_t i = 0; i < ARRAY_SIZE(var_infos); i++) {
       const MapVarInfo& mvi = var_infos[i];
       if (mvi.varname == key) {
         found_mapvar = true;
