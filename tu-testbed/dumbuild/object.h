@@ -31,6 +31,9 @@ class Object {
 
   Object() {
   }
+
+  virtual ~Object() {
+  }
   
   virtual Res Init(const Context* context,
 		   const string& name,

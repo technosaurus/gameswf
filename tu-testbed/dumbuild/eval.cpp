@@ -428,7 +428,7 @@ Res OrFunc(const LispContext* lc, const LispValue& args, LispValue* result) {
   assert(args.type() == LispValue::ARRAY);
 
   *result = LispValue();  // default to NIL
-  for (int i = 1; i < args.array_val().size(); i++) {
+  for (size_t i = 1; i < args.array_val().size(); i++) {
     LispValue val(args.array_val()[static_cast<unsigned>(i)]);
     Res err = Eval(lc, val, result);
     if (!err.Ok()) {
