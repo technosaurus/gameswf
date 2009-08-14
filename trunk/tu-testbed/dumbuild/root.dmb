@@ -15,7 +15,7 @@
   { "name": "vc8-base",
     "type": "config",
 
-    "inherit": ":vc-base",
+    "inherit": "vc-base",
 
     // This is the environment that the compiler runs in.  dmb's
     // environment does not leak into the compiler processes, so
@@ -47,7 +47,7 @@
   { "name": "vc8-debug",
     "type": "config",
 
-    "inherit": ":vc8-base",
+    "inherit": "vc8-base",
 
     "cflags": ["fill", "${cflags} -Zi"],
   },
@@ -55,7 +55,7 @@
   { "name": "vc8-release",
     "type": "config",
 
-    "inherit": ":vc8-base",
+    "inherit": "vc8-base",
 
     "cflags": ["fill", "${cflags} -Ox -DNDEBUG"],
   },
@@ -63,7 +63,7 @@
   { "name": "vc9-base",
     "type": "config",
 
-    "inherit": ":vc-base",
+    "inherit": "vc-base",
     
     // This is the environment that the compiler runs in.  dmb's
     // environment does not leak into the compiler processes, so
@@ -94,13 +94,13 @@
 
   { "name": "vc9-debug",
     "type": "config",
-    "inherit": ":vc9-base",
+    "inherit": "vc9-base",
     "cflags": ["fill", "${cflags} -Zi"],
   },
 
   { "name": "vc9-release",
     "type": "config",
-    "inherit": ":vc9-base",
+    "inherit": "vc9-base",
     "cflags": ["fill", "${cflags} -Ox -DNDEBUG"],
   },
 
@@ -140,7 +140,7 @@
   { "name": "gcc-debug",
     "type": "config",
 
-    "inherit": ":gcc-base",
+    "inherit": "gcc-base",
 
     "cflags": ["fill", "${cflags} -g"],
   },
@@ -148,7 +148,7 @@
   { "name": "gcc-release",
     "type": "config",
 
-    "inherit": ":gcc-base",
+    "inherit": "gcc-base",
 
     "cflags": ["fill", "${cflags} -O2"],
   },
@@ -161,6 +161,6 @@
   { "name": "default",
     "type": "config",
 
-    "inherit": ["config_detected", ":vc9-debug", ":vc8-debug", ":gcc-debug"],
+    "inherit": ["config_detected", "vc9-debug", "vc8-debug", "gcc-debug"],
   }
 ]

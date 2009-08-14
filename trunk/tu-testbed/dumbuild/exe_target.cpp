@@ -62,7 +62,7 @@ Res ExeTarget::Process(const Context* context) {
   const Config* config = context->GetConfig();
 
   // Read existing build marker, if any.
-  string output_fname = CanonicalFilePart(name_) + config->exe_extension();
+  string output_fname = FilenameFilePart(name_) + config->exe_extension();
   Hash previous_dep_hash;
   res = ReadFileHash(absolute_out_dir(), output_fname, &previous_dep_hash);
   // Ignore return value; we don't care!

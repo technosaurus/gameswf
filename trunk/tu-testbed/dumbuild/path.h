@@ -11,14 +11,17 @@
 //   "../something" == relative path
 //   "./something" == relative path
 //   "something" == relative path
-//   no ':' char allowed in paths
 //
 // Canonical paths:
 //   absolute path, nothing relative
 //   doesn't end in '/'
 //
-// Canonical names:
-//   "path:targetname"
+// Target names:
+//   "path/targetname"
+//   "targetname"           == targetname in the current dir
+//   "./targetname"         == ditto
+//   "../targetname"        == targetname in parent dir
+//   "#path/to/targetname"  == targetname relative to root
 
 #ifndef PATH_H_
 #define PATH_H_
@@ -31,16 +34,8 @@ string PathJoin(const string& a, const string& b);
 bool HasParentDir(const string& path);
 // Doesn't work correctly on paths that contain ".." elements.
 string ParentDir(const string& path);
-void SplitCanonicalName(const string& name, string* path_part,
-                        string* name_part);
-bool IsCanonicalPath(const string& path);
-bool IsCanonicalNamePart(const string& path);
-bool IsCanonicalName(const string& name);
-Res CanonicalizeName(const string& base_path,
-                     const string& relative_path,
-                     string* out);
-string CanonicalPathPart(const string& name);
-string CanonicalFilePart(const string& name);
+
+bool IsFileNamePart(const string& name);
 void SplitFileName(const string& name, string* path_part,
                    string* name_part);
 string FilenamePathPart(const string& name);

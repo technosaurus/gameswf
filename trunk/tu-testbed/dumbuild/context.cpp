@@ -23,7 +23,7 @@ Context::Context() : done_reading_(false),
                      content_hash_cache_(NULL),
                      dep_hash_cache_(NULL),
                      object_store_(NULL) {
-  config_name_ = ":default";
+  config_name_ = "default";
 
   content_hash_cache_ = new HashCache<string>();
   dep_hash_cache_ = new HashCache<Hash>();
@@ -170,7 +170,7 @@ Res Context::ProcessArgs(int argc, const char** argv) {
 
 Res Context::Init(const string& root_path, const string& canonical_currdir) {
   tree_root_ = root_path;
-  out_root_ = PathJoin("dmb-out", CanonicalFilePart(config_name_));
+  out_root_ = PathJoin("dmb-out", FilenameFilePart(config_name_));
 
   Res res = CreatePath(tree_root_, "dmb-out/ostore");
   if (!res.Ok()) {
@@ -185,7 +185,7 @@ Res Context::Init(const string& root_path, const string& canonical_currdir) {
 
   // TODO parse specified target
   string target_dir = "";
-  main_target_name_ = ":default";
+  main_target_name_ = "default";
 
   res = ReadObjects(target_dir, AbsoluteFile(target_dir, "build.dmb"));
   if (!res.Ok()) {

@@ -57,7 +57,7 @@ Res LibTarget::Process(const Context* context) {
   // all dependencies.
 
   // Read existing build marker, if any.
-  string output_fname = CanonicalFilePart(name_) + config->lib_extension();
+  string output_fname = FilenameFilePart(name_) + config->lib_extension();
   Hash previous_dep_hash;
   res = ReadFileHash(absolute_out_dir(), output_fname, &previous_dep_hash);
   // Ignore return value; we don't care!
