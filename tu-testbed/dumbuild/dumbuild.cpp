@@ -3,36 +3,7 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-// Dead simple dumb C++ build tool.  Is it useful?
-//
-// Basic idea: take all the C++ files, concatenate them together (via
-// #includes), and run that through the compiler.  The goal is fast
-// compilation, and no need to figure out which cpp files depend on
-// which headers (so as to pick which cpp files to compile).  Instead,
-// everything gets compiled all the time.
-//
-// Build files are declared using JSON syntax.
-//
-
-// TODO:
-// * write a turd for each .cpp and .h, containing its size and content hash
-//   - that's the basis for change detection
-// * header-changed checks:
-//   - when a header file in a target changes, set header_changed flag
-//   - when a direct dep of a target has header_changed, rebuild whole target
-//   - when a header inside a target changes, rebuild whole target
-//   - All headers in a dir are assumed to be part of targets in that dir?
-//     Or list headers explicitly?
-// * source changed check:
-//   - when a cpp file in a target changes, recompile that cpp
-// * config system
-//   - config gets an "inherit" keyword, give ordered list of parents
-//   - for string vars, use string template substitution.  "... ${varname} ..."
-//   - ${varname} -- inherits based on declared order
-//   - ${parent_x.varname} -- to inherit from an explicitly named parent?
-//   - for list vars -- may need to implement actual operators
-//     in the config language.  Maybe just punt for now.
-// * dll_target
+// C++ build tool written in C++.  See README.txt for more info.
 
 #include <assert.h>
 #include <json/json.h>
@@ -57,9 +28,12 @@ void PrintUsage() {
          "\n"
          "options include:\n"
          "\n"
-         "  -c <config>   specify a configuration\n"
-         "  -n            don't actually execute the commands\n"
-         "  -v            verbose mode (show what commands would be executed)\n"
+         "  -C <dir>      Change to specified directory before starting.\n"
+         "  -c <config>   Specify a named configuration.\n"
+         "  -n            Don't actually execute the commands.\n"
+         "  -r            Rebuild (don't reuse previous build products).\n"
+         "  -v            Verbose mode (show what commands would be executed).\n"
+         "  --test        Run internal unit tests.\n"
          );
 }
 

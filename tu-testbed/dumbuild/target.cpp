@@ -22,7 +22,7 @@ Res Target::Init(const Context* context,
   }
 
   context->LogVerbose(StringPrintf("Target::Init(): %s\n", name_.c_str()));
-  assert(IsCanonicalName(name_));
+  assert(IsFileNamePart(name_));
 
   // Initialize dependencies.
   if (value.isMember("dep")) {
@@ -40,13 +40,7 @@ Res Target::Init(const Context* context,
         return Res(ERR_PARSE, name_ + ": dep list value is not a string: " +
                    (*it).toStyledString());
       }
-      string depname;
-      Res res = CanonicalizeName(CanonicalPathPart(name_), (*it).asString(),
-                                 &depname);
-      if (!res.Ok()) {
-        res.AppendDetail("\nwhile parsing deplist for " + name_);
-        return res;
-      }
+      string depname = PathJoin(FilenamePathPart(name_), (*it).asString());
 
       dep_.push_back(depname);
     }
@@ -58,7 +52,7 @@ Res Target::Init(const Context* context,
     if (!srclist.isObject() && !srclist.isArray()) {
       return Res(ERR_PARSE,
                  name_ + ": src value is not object or array: " +
-		 srclist.toStyledString());
+                 srclist.toStyledString());
     }
 
     for (Json::Value::iterator it = srclist.begin();
@@ -68,8 +62,7 @@ Res Target::Init(const Context* context,
         return Res(ERR_PARSE, name_ + ": src list value is not a string: " +
                    (*it).toStyledString());
       }
-      string srcname = PathJoin(CanonicalPathPart(name_),
-                                     (*it).asString());
+      string srcname = PathJoin(FilenamePathPart(name_), (*it).asString());
       src_.push_back(srcname);
     }
   }
@@ -80,7 +73,7 @@ Res Target::Init(const Context* context,
     if (!inclist.isObject() && !inclist.isArray()) {
       return Res(ERR_PARSE,
                  name_ + ": inc_dirs value is not object or array: " +
-		 inclist.toStyledString());
+                 inclist.toStyledString());
     }
 
     for (Json::Value::iterator it = inclist.begin();
@@ -91,8 +84,7 @@ Res Target::Init(const Context* context,
                    ": inc_dirs list value is not a string: " +
                    (*it).toStyledString());
       }
-      string inc_dir_name = PathJoin(CanonicalPathPart(name_),
-                                          (*it).asString());
+      string inc_dir_name = PathJoin(FilenamePathPart(name_), (*it).asString());
       inc_dirs_.push_back(inc_dir_name);
     }
   }
@@ -158,7 +150,7 @@ Res Target::ProcessDependencies(const Context* context) {
 }
 
 Res Target::BuildOutDirAndSetupPaths(const Context* context) {
-  string out_dir = PathJoin(context->out_root(), CanonicalPathPart(name_));
+  string out_dir = PathJoin(context->out_root(), FilenamePathPart(name_));
   Res res = CreatePath(context->tree_root(), out_dir);
   if (!res.Ok()) {
     res.AppendDetail("\nwhile creating output path for " + name_);

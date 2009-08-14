@@ -15,11 +15,7 @@ Res Object::Create(const Context* context, const string& path,
                    const Json::Value& value, Object** object) {
   *object = NULL;
 
-  string name;
-  Res res = CanonicalizeName(path, value["name"].asString(), &name);
-  if (!res.Ok()) {
-    return res;
-  }
+  string name = PathJoin(path, value["name"].asString());
 
   if (!value.isMember("type")) {
     return Res(ERR_PARSE, "object '" + name + "' has no type");
@@ -49,9 +45,9 @@ Res Object::Init(const Context* context, const string& name,
                  const Json::Value& value) {
   name_ = name;
   context->LogVerbose(StringPrintf("Object::Init(): %s\n", name_.c_str()));
-  if (!IsCanonicalName(name_)) {
+  if (!IsFileNamePart(name_)) {
     return Res(ERR_PARSE, "Error: object name '" + name_ +
-               "' is not canonical.");
+               "' is not valid due to containing a path part.");
   }
 
   return Res(OK);

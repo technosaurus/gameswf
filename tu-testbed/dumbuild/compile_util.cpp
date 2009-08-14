@@ -90,15 +90,15 @@ Res PrepareCompileVars(const Target* t, const Context* context,
     lib_list += " ";
     const string& dep = t->dep()[i];
     lib_list += PathJoin(PathJoin(t->absolute_out_dir(),
-                                  CanonicalPathPart(dep)),
-                         CanonicalFilePart(dep)) +
+                                  FilenamePathPart(dep)),
+                         FilenameFilePart(dep)) +
                 config->lib_extension();
   }
 
   ci->vars_["src_list"] = src_list;
   ci->vars_["obj_list"] = obj_list;
   ci->vars_["lib_list"] = lib_list;
-  ci->vars_["basename"] = CanonicalFilePart(t->name());
+  ci->vars_["basename"] = FilenameFilePart(t->name());
   ci->vars_["inc_dirs"] = inc_dirs_str;
 
   return Res(OK);
