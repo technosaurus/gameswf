@@ -19,7 +19,6 @@ Context::Context() : done_reading_(false),
                      rebuild_all_(false),
                      active_config_(NULL),
                      log_verbose_(false),
-                     main_target_(NULL),
                      content_hash_cache_(NULL),
                      dep_hash_cache_(NULL),
                      object_store_(NULL) {
@@ -162,6 +161,9 @@ Res Context::ProcessArgs(int argc, const char** argv) {
           // mispelling etc.
         }
       }
+    } else {
+      // No dash, so it must be a target name.
+      specified_targets_.push_back(arg);
     }
   }
 
@@ -178,26 +180,27 @@ Res Context::Init(const string& root_path, const string& canonical_currdir) {
   }
   object_store_ = new ObjectStore((tree_root_ + "/dmb-out/ostore").c_str());
 
-  res = ReadObjects("", AbsoluteFile("", "root.dmb"));
+  res = ReadObjects("", "root.dmb");
   if (!res.Ok()) {
     return res;
   }
 
-  // TODO parse specified target
-  string target_dir = "";
-  main_target_name_ = "default";
-
-  res = ReadObjects(target_dir, AbsoluteFile(target_dir, "build.dmb"));
+  res = ReadObjects(canonical_currdir, "build.dmb");
   if (!res.Ok()) {
     return res;
   }
 
-  main_target_ = GetTarget(main_target_name_);
-  if (!main_target_) {
-    return Res(ERR_UNKNOWN_TARGET, main_target_name_);
+  if (specified_targets_.size() == 0) {
+    specified_targets_.push_back("default");
   }
 
-  DoneReading();
+  // Look up the active config.
+  map<string, Config*>::const_iterator it =
+    configs_.find(config_name_);
+  if (it != configs_.end()) {
+    active_config_ = it->second;
+  }
+
   if (!GetConfig()) {
     return Res(ERR, StringPrintf("config '%s' is not defined",
                                  config_name().c_str()));
@@ -206,15 +209,21 @@ Res Context::Init(const string& root_path, const string& canonical_currdir) {
   return Res(OK);
 }
 
-Res Context::ReadObjects(const string& path, const string& filename) {
+Res Context::ReadObjects(const string& canonical_path, const string& filename) {
   assert(!done_reading_);
+
+  string abs_file = AbsoluteFile(canonical_path, filename);
+  if (loaded_files_.find(abs_file) != loaded_files_.end()) {
+    return Res(ERR_ALREADY_LOADED, abs_file);
+  }
+  loaded_files_.insert(abs_file);
 
   // Slurp in the file.
   string file_data;
-  FILE* fp = fopen(filename.c_str(), "r");
+  FILE* fp = fopen(abs_file.c_str(), "r");
   if (!fp) {
-    fprintf(stderr, "Can't open build file '%s'\n", filename.c_str());
-    exit(1);
+    return Res(ERR_FILE_NOT_FOUND,
+               StringPrintf("Can't open build file '%s'\n", abs_file.c_str()));
   }
   for (;;) {
     int c = fgetc(fp);
@@ -231,30 +240,40 @@ Res Context::ReadObjects(const string& path, const string& filename) {
   if (reader.parse(file_data, root, false)) {
     // Parse OK.
     // Iterate through the values and store the objects.
-    Res result = ParseGroup(path, root);
+    Res result = ParseGroup(canonical_path, root);
     if (!result.Ok()) {
       return result;
     }
   } else {
-    return Res(ERR_PARSE, "Parse error in file " + filename + "\n" +
+    return Res(ERR_PARSE, "Parse error in file " + abs_file + "\n" +
                reader.getFormatedErrorMessages());
   }
 
   return Res(OK);
 }
 
+Res Context::Resolve() {
+  for (size_t i = 0; i < specified_targets_.size(); i++) {
+    Target* target = GetTarget(specified_targets_[i]);
+    if (!target) {
+      return Res(ERR_UNKNOWN_TARGET, specified_targets_[i]);
+    }
+
+    Res res = target->Resolve(this);
+    if (!res.Ok()) {
+      return res;
+    }
+  }
+  DoneReading();
+  return Res(OK);
+}
+
 void Context::DoneReading() {
   done_reading_ = true;
-
-  // Look up the active config.
-  map<string, Config*>::const_iterator it =
-    configs_.find(config_name_);
-  if (it != configs_.end()) {
-    active_config_ = it->second;
-  }
 }
 
 Res Context::ProcessTargets() const {
+  assert(done_reading_);
   const map<string, Target*>& targs = targets();
   for (map<string, Target*>::const_iterator it = targs.begin();
        it != targs.end();
@@ -271,6 +290,7 @@ Res Context::ProcessTargets() const {
 }
 
 Res Context::ParseValue(const string& path, const Json::Value& value) {
+  assert(!done_reading_);
   if (!value.isObject()) {
     return Res(ERR_PARSE, "object is not a JSON object");
   }
@@ -304,6 +324,7 @@ Res Context::ParseValue(const string& path, const Json::Value& value) {
 }
 
 Res Context::ParseGroup(const string& path, const Json::Value& value) {
+  assert(!done_reading_);
   if (!value.isObject() && !value.isArray()) {
     return Res(ERR_PARSE, "group is not an object or array");
   }
@@ -334,7 +355,7 @@ string Context::GetArgValue(const char* argname) const {
 }
 
 string Context::AbsoluteFile(const string& canonical_path,
-                                  const string& filename) {
+                             const string& filename) {
   return PathJoin(tree_root(), PathJoin(canonical_path, filename));
 }
 
@@ -351,6 +372,38 @@ Res Context::ComputeOrGetFileContentHash(const string& filename,
 
   content_hash_cache_->Insert(filename, *out);
   return Res(OK);
+}
+
+Res Context::GetOrLoadTarget(const string& canonical_name,
+                             Target** result) {
+  assert(!done_reading_);
+
+  *result = NULL;
+  Target* target = GetTarget(canonical_name);
+  if (target) {
+    *result = target;
+    return Res(OK);
+  }
+
+  // Maybe we need to load.
+  string path_part = FilenamePathPart(canonical_name);
+  if (path_part.length()) {
+    Res res = ReadObjects(path_part, "build.dmb");
+    if (res.value() == ERR_ALREADY_LOADED) {
+      return Res(ERR_UNDEFINED_TARGET, canonical_name);
+    }
+    if (!res.Ok()) {
+      return res;
+    }
+
+    target = GetTarget(canonical_name);
+    if (target) {
+      *result = target;
+      return Res(OK);
+    }
+  }
+
+  return Res(ERR_UNDEFINED_TARGET, canonical_name);
 }
 
 void Context::Log(const string& msg) const {

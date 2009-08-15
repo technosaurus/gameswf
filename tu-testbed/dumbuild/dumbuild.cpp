@@ -138,9 +138,8 @@ int main(int argc, const char** argv) {
   ExitIfError(res);
 
   assert(context.GetConfig());
-  assert(context.main_target());
 
-  res = context.main_target()->Resolve(&context);
+  res = context.Resolve();
   ExitIfError(res);
 
   res = context.ProcessTargets();

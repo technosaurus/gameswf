@@ -22,7 +22,8 @@ Res Target::Init(const Context* context,
   }
 
   context->LogVerbose(StringPrintf("Target::Init(): %s\n", name_.c_str()));
-  assert(IsFileNamePart(name_));
+
+  string this_path = FilenamePathPart(name_);
 
   // Initialize dependencies.
   if (value.isMember("dep")) {
@@ -40,7 +41,7 @@ Res Target::Init(const Context* context,
         return Res(ERR_PARSE, name_ + ": dep list value is not a string: " +
                    (*it).toStyledString());
       }
-      string depname = PathJoin(FilenamePathPart(name_), (*it).asString());
+      string depname = Canonicalize(this_path, (*it).asString());
 
       dep_.push_back(depname);
     }
@@ -62,7 +63,7 @@ Res Target::Init(const Context* context,
         return Res(ERR_PARSE, name_ + ": src list value is not a string: " +
                    (*it).toStyledString());
       }
-      string srcname = PathJoin(FilenamePathPart(name_), (*it).asString());
+      string srcname = Canonicalize(this_path, (*it).asString());
       src_.push_back(srcname);
     }
   }
@@ -84,7 +85,7 @@ Res Target::Init(const Context* context,
                    ": inc_dirs list value is not a string: " +
                    (*it).toStyledString());
       }
-      string inc_dir_name = PathJoin(FilenamePathPart(name_), (*it).asString());
+      string inc_dir_name = Canonicalize(this_path, (*it).asString());
       inc_dirs_.push_back(inc_dir_name);
     }
   }
@@ -107,12 +108,14 @@ Res Target::Resolve(Context* context) {
 
     // Try to Resolve() all our dependencies.
     for (size_t i = 0; i < dep().size(); i++) {
-      Target* dependency = context->GetOrLoadTarget(dep()[i]);
-      if (!dependency) {
-        return Res(ERR_UNKNOWN_TARGET, name() + ": can't find dep " + dep()[i]);
+      Target* dependency = NULL;
+      Res res = context->GetOrLoadTarget(dep()[i], &dependency);
+      if (!res.Ok()) {
+        return res;
       }
+
       assert(dependency);
-      Res res = dependency->Resolve(context);
+      res = dependency->Resolve(context);
       if (!res.Ok()) {
         if (res.value() == ERR_DEPENDENCY_CYCLE) {
           // Tack on our name to the error message, so the whole

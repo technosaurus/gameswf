@@ -45,10 +45,6 @@ Res Object::Init(const Context* context, const string& name,
                  const Json::Value& value) {
   name_ = name;
   context->LogVerbose(StringPrintf("Object::Init(): %s\n", name_.c_str()));
-  if (!IsFileNamePart(name_)) {
-    return Res(ERR_PARSE, "Error: object name '" + name_ +
-               "' is not valid due to containing a path part.");
-  }
 
   return Res(OK);
 }
