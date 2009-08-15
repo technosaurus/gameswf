@@ -13,12 +13,45 @@ string GetPath(const string& filename) {
 }
 
 string PathJoin(const string& a, const string& b) {
-  // TODO deal with cwd and "/" and ".." and so on; i.e. normalize the path.
-  if (a.length() == 0 || a[a.length() - 1] == '/') {
-    return a + b;
-  } else {
-    return a + '/' + b;
+  int a_end = a.length();
+  if (a_end > 0 && a[a_end - 1] == '/') {
+    a_end--;
   }
+
+  // Process any parent specs at the start of b.
+  int b_start = 0;
+  while (b_start < b.size() && a_end > 0) {
+    if (b.find("../", b_start) == b_start) {
+      // Starts with ../
+      b_start += 3;
+    } else if (b.length() - b_start == 2 &&
+               b[b_start] == '.' && b[b_start + 1] == '.') {
+      // Whole of b is now ".."
+      b_start += 2;
+    } else {
+      break;
+    }
+
+    a_end = a.rfind("/", a_end - 1);
+    if (a_end < 0) {
+      a_end = 0;
+    }
+  }
+
+  string result(a, 0, a_end);
+  if (a_end && b_start < b.length()) {
+    result += '/';
+  }
+  result += string(b, b_start);
+  return result;
+}
+
+string Canonicalize(const string& base_dir, const string& relative_path) {
+  if (relative_path.size() && relative_path[0] == '#') {
+    // '#' indicates a path relative to the project root.
+    return string(relative_path, 1);
+  }
+  return PathJoin(base_dir, relative_path);
 }
 
 bool HasParentDir(const string& path) {
@@ -97,10 +130,18 @@ string FilenameFilePart(const string& name) {
 
 void TestPath() {
   printf("TestPath()\n");
-//   assert(IsCanonicalPath("#"));
-//   assert(IsCanonicalPath("#subdir"));
-//   assert(IsCanonicalPath("#subdir/subdir2"));
-//   assert(IsCanonicalPath("subdir"));
-
-//   assert(!IsCanonicalPath("subdir:target"));
+  assert(Canonicalize("", "") == "");
+  assert(Canonicalize("", "baker") == "baker");
+  assert(Canonicalize("able", "") == "able");
+  assert(Canonicalize("able", "baker") == "able/baker");
+  assert(Canonicalize("able/", "baker") == "able/baker");
+  assert(Canonicalize("baker/charlie", "#delta") == "delta");
+  assert(Canonicalize("baker/charlie", "#../external") == "../external");
+  assert(Canonicalize("baker/charlie", "..") == "baker");
+  assert(Canonicalize("baker/charlie", "delta") == "baker/charlie/delta");
+  assert(Canonicalize("baker/charlie", "../delta") == "baker/delta");
+  assert(Canonicalize("baker/charlie/", "../delta") == "baker/delta");
+  assert(Canonicalize("baker/charlie", "../../delta") == "delta");
+  assert(Canonicalize("baker/charlie", "../..") == "");
+  assert(Canonicalize("baker/charlie", "../../../external") == "../external");
 }

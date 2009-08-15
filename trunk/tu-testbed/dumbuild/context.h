@@ -10,6 +10,7 @@
 #ifndef CONTEXT_H_
 #define CONTEXT_H_
 
+#include <set>
 #include "dmb_types.h"
 #include "hash.h"
 #include "res.h"
@@ -57,8 +58,8 @@ class Context {
     rebuild_all_ = ra;
   }
 
-  Target* main_target() const {
-    return main_target_;
+  const vector<string>& specified_targets() const {
+    return specified_targets_;
   }
 
   // Access to command-line args.  The name should be the long name of
@@ -72,12 +73,19 @@ class Context {
     return AbsoluteFile(string(canonical_path), string(filename));
   }
 
-  // Parses build config from the specified file.
-  Res ReadObjects(const string& path, const string& filename);
+  // Parses build declarations from the specified file.
+  Res ReadObjects(const string& canonical_path, const string& filename);
 
   // Call this when you're done reading configs and are ready to
   // proceed with the build.
   void DoneReading();
+
+  // Resolves the specified targets, which involves loading &
+  // resolving the graph of dependencies.
+  //
+  // When we're done we have a full list of the targets that need to
+  // be built with a full description of each target.
+  Res Resolve();
 
   // Does the build.
   Res ProcessTargets() const;
@@ -101,22 +109,10 @@ class Context {
     return it->second;
   }
 
-  Target* GetOrLoadTarget(const string& name) {
-    Target* target = GetTarget(name);
-    if (target) {
-      return target;
-    }
-
-    // Maybe we need to load.
-    // TODO: look for build file in path.  Did we already load it?  If
-    // not, load it, and look for target within it.
-    Log(StringPrintf("TODO: can't load %s\n", name.c_str()));
-    return NULL;
-  }
+  Res GetOrLoadTarget(const string& canonical_name, Target** result);
 
   // Returns the active config, if any.
   const Config* GetConfig() const {
-    assert(done_reading_);
     return active_config_;
   }
 
@@ -164,10 +160,9 @@ class Context {
   map<string, Config*> configs_;
   map<string, Target*> targets_;
   map<string, string> args_;
+  std::set<string> loaded_files_;
   bool log_verbose_;
-  string specified_target_;
-  string main_target_name_;
-  Target* main_target_;
+  vector<string> specified_targets_;
 
   HashCache<string>* content_hash_cache_;
   HashCache<Hash>* dep_hash_cache_;

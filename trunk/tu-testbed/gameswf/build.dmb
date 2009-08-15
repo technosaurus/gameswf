@@ -1,13 +1,20 @@
 // gameswf build file
 [
+  { "name": "default",
+    "type": "generic",
+    "dep": [
+      "gameswf"
+    ]
+  },
+
   { "name": "gameswf",
     "type": "lib",
     "src": [
-      "gameswf.cpp",
+      "gameswf.cpp"
     ],
     "dep": [
-      "#base:base",
-      "#net:net"
+      "#base/base",
+      "#net/net"
     ],
     "inc_dirs": [
       "#"
