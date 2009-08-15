@@ -1,3 +1,20 @@
+2009-08-08  Vitaly Alexeev <tishka92@yahoo.com>
+
+The gameswf-2009-08-08 release of gameSWF is coming.
+Improvements since the gameswf-2008-06-17 release are:
+
+* added video handler for OpenGL ES
+* added sound handler for OpenAL
+* Array class implementation is optimized
+* reverted fontlib, so text is antialiased now
+* added network support in loadMovie()
+* added SQLite plugin
+* added File plugin
+* added libpthread support
+* added 'Mouse' action script class implementation
+* fixed a lot of bugs
+
+
 2008-06-17  Vitaly Alexeev <tishka92@yahoo.com>
 
 The gameswf-2008-06-17 release of gameSWF is coming.
