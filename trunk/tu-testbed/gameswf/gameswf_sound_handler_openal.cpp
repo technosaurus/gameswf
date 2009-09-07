@@ -7,7 +7,7 @@
 
 #include "gameswf/gameswf_sound_handler_openal.h"
 
-#ifdef TU_USE_OPENAL
+#if TU_USE_OPENAL == 1
 
 namespace gameswf
 {

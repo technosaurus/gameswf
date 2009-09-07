@@ -6,6 +6,7 @@
 #include "object.h"
 #include "config.h"
 #include "exe_target.h"
+#include "external_lib_target.h"
 #include "generic_target.h"
 #include "lib_target.h"
 #include "target.h"
@@ -29,6 +30,8 @@ Res Object::Create(const Context* context, const string& path,
     *object = new ExeTarget();
   } else if (type == "lib") {
     *object = new LibTarget();
+  } else if (type == "external_lib") {
+    *object = new ExternalLibTarget();
   } else if (type == "generic") {
     *object = new GenericTarget();
   } else if (type == "config") {
@@ -44,6 +47,7 @@ Res Object::Create(const Context* context, const string& path,
 Res Object::Init(const Context* context, const string& name,
                  const Json::Value& value) {
   name_ = name;
+  base_dir_ = FilenamePathPart(name_);
   context->LogVerbose(StringPrintf("Object::Init(): %s\n", name_.c_str()));
 
   return Res(OK);

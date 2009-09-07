@@ -367,6 +367,7 @@ Res Context::ComputeOrGetFileContentHash(const string& filename,
   out->Reset();
   Res res = out->AppendFile(filename);
   if (!res.Ok()) {
+    res.AppendDetail("\nDoes the file exist?");
     return res;
   }
 
@@ -415,4 +416,10 @@ void Context::LogVerbose(const string& msg) const {
   if (log_verbose_) {
     Log(msg);
   }
+}
+
+void Context::Warning(const string& msg) const {
+  // Maybe someday keep track of these separately.  E.g. perhaps have
+  // a fail-on-warning option.  For now, just log.
+  Log(msg);
 }

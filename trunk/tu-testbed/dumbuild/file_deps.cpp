@@ -114,8 +114,7 @@ bool FindHeader(const string& src_dir, const Target* t,
 
     // TODO: tulrich: hm, shouldn't these be relative to the abs
     // output dir???
-    string path = PathJoin(context->tree_root(),
-                                t->inc_dirs()[i]);
+    string path = PathJoin(context->tree_root(), t->inc_dirs()[i]);
     path = PathJoin(path, header_file);
     if (FileExists(path)) {
       *header_path = path;

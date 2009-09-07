@@ -224,13 +224,13 @@
 
 
 /*
-  WIN32 sets up defaults for MS environment and compilers.
+  _WIN32 sets up defaults for MS environment and compilers.
   Otherwise defaults are for unix.
 */
 
-/* #define WIN32 */
+/* #define _WIN32 */
 
-#ifdef WIN32
+#ifdef _WIN32
 
 #pragma warning(disable: 4308 4307 4047)  // @@ tulrich
 
@@ -297,7 +297,7 @@ static int cpuinfo (int whole, unsigned long *kernel, unsigned long *user);
 */
 
 #ifndef Void_t
-#if (__STD_C || defined(WIN32))
+#if (__STD_C || defined(_WIN32))
 #define Void_t      void
 #else
 #define Void_t      char
@@ -577,7 +577,7 @@ extern "C" {
 
 #if (__STD_C || defined(HAVE_MEMCPY))
 
-#ifdef WIN32
+#ifdef _WIN32
 /* On Win32 memset and memcpy are already declared in windows.h */
 #else
 #if __STD_C
@@ -626,7 +626,7 @@ extern Void_t*     sbrk();
 /*
   MORECORE is the name of the routine to call to obtain more memory
   from the system.  See below for general guidance on writing
-  alternative MORECORE functions, as well as a version for WIN32 and a
+  alternative MORECORE functions, as well as a version for _WIN32 and a
   sample version for pre-OSX macos.
 */
 
@@ -766,7 +766,7 @@ extern Void_t*     sbrk();
        extern size_t getpagesize();
 #      define malloc_getpagesize getpagesize()
 #    else
-#      ifdef WIN32 /* use supplied emulation of getpagesize */
+#      ifdef _WIN32 /* use supplied emulation of getpagesize */
 #        define malloc_getpagesize getpagesize() 
 #      else
 #        ifndef LACKS_SYS_PARAM_H
@@ -1524,7 +1524,7 @@ static struct mallinfo mALLINFo();
 
 #ifdef USE_MALLOC_LOCK
 
-#ifdef WIN32
+#ifdef _WIN32
 
 static int mALLOC_MUTEx;
 #define MALLOC_PREACTION   slwait(&mALLOC_MUTEx)
@@ -4560,7 +4560,7 @@ void mSTATs()
 {
   struct mallinfo mi = mALLINFo();
 
-#ifdef WIN32
+#ifdef _WIN32
   {
     unsigned long free, reserved, committed;
     vminfo (&free, &reserved, &committed);
@@ -4582,7 +4582,7 @@ void mSTATs()
           (unsigned long)(mi.uordblks + mi.hblkhd));
 
 
-#ifdef WIN32 
+#ifdef _WIN32 
   {
     unsigned long kernel, user;
     if (cpuinfo (TRUE, &kernel, &user)) {
@@ -4794,7 +4794,7 @@ int mALLOPt(param_number, value) int param_number; int value;
 */
 
 
-#ifdef WIN32
+#ifdef _WIN32
 
 #ifdef _DEBUG
 /* #define TRACE */
@@ -5275,7 +5275,7 @@ static int cpuinfo (int whole, unsigned long *kernel, unsigned long *user) {
     }
 }
 
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 /* ------------------------------------------------------------
 History:
@@ -5285,7 +5285,7 @@ History:
         Thanks to Michael Pachos for motivation and help.
       * Make optional .h file available
       * Allow > 2GB requests on 32bit systems.
-      * new WIN32 sbrk, mmap, munmap, lock code from <Walter@GeNeSys-e.de>.
+      * new _WIN32 sbrk, mmap, munmap, lock code from <Walter@GeNeSys-e.de>.
         Thanks also to Andreas Mueller <a.mueller at paradatec.de>,
         and Anonymous.
       * Allow override of MALLOC_ALIGNMENT (Thanks to Ruud Waij for 
@@ -5306,17 +5306,17 @@ History:
 
     V2.6.6 Sun Dec  5 07:42:19 1999  Doug Lea  (dl at gee)
       * return null for negative arguments
-      * Added Several WIN32 cleanups from Martin C. Fong <mcfong at yahoo.com>
+      * Added Several _WIN32 cleanups from Martin C. Fong <mcfong at yahoo.com>
          * Add 'LACKS_SYS_PARAM_H' for those systems without 'sys/param.h'
-          (e.g. WIN32 platforms)
-         * Cleanup header file inclusion for WIN32 platforms
+          (e.g. _WIN32 platforms)
+         * Cleanup header file inclusion for _WIN32 platforms
          * Cleanup code to avoid Microsoft Visual C++ compiler complaints
          * Add 'USE_DL_PREFIX' to quickly allow co-existence with existing
            memory allocation routines
-         * Set 'malloc_getpagesize' for WIN32 platforms (needs more work)
-         * Use 'assert' rather than 'ASSERT' in WIN32 code to conform to
-           usage of 'assert' in non-WIN32 code
-         * Improve WIN32 'sbrk()' emulation's 'findRegion()' routine to
+         * Set 'malloc_getpagesize' for _WIN32 platforms (needs more work)
+         * Use 'assert' rather than 'ASSERT' in _WIN32 code to conform to
+           usage of 'assert' in non-_WIN32 code
+         * Improve _WIN32 'sbrk()' emulation's 'findRegion()' routine to
            avoid infinite loop
       * Always call 'fREe()' rather than 'free()'
 
@@ -5326,7 +5326,7 @@ History:
     V2.6.3 Sun May 19 08:17:58 1996  Doug Lea  (dl at gee)
       * Added pvalloc, as recommended by H.J. Liu
       * Added 64bit pointer support mainly from Wolfram Gloger
-      * Added anonymously donated WIN32 sbrk emulation
+      * Added anonymously donated _WIN32 sbrk emulation
       * Malloc, calloc, getpagesize: add optimizations from Raymond Nijssen
       * malloc_extend_top: fix mask error that caused wastage after
         foreign sbrks

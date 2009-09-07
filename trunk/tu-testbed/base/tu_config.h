@@ -122,9 +122,17 @@
 #	define TU_USE_FLASH_COMPATIBLE_HITTEST 1
 #endif
 
-// SDL is used by default
-//#define TU_USE_OPENAL
-#define TU_USE_SDL
-//#define TU_USE_OGLES
+// define TU_USE_SDL to 1 to use SDL sound/render handler
+#ifndef TU_USE_SDL
+#	define TU_USE_SDL 1
+#endif
+
+#ifndef TU_USE_OPENAL
+#	define TU_USE_OPENAL 0
+#endif
+
+#ifndef TU_USE_OGLES
+#	define TU_USE_OGLES 0
+#endif
 
 #endif // TU_CONFIG_H

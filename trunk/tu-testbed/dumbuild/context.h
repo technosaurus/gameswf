@@ -146,6 +146,7 @@ class Context {
   // TODO: add printf-style formatting.
   void Log(const string& msg) const;
   void LogVerbose(const string& msg) const;
+  void Warning(const string& msg) const;
 
  private:
   Res ParseValue(const string& path, const Json::Value& value);

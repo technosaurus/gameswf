@@ -59,9 +59,15 @@ class Target : public Object {
     return dep_;
   }
 
-  // List of include dirs.
+  // List of include dirs for compiling this target.
   const vector<string>& inc_dirs() const {
     return inc_dirs_;
+  }
+
+  // List of include dirs for compiling targets that depend on this
+  // target.
+  const vector<string>& dep_inc_dirs() const {
+    return dep_inc_dirs_;
   }
 
   // Relative path from the target's compile output directory back up
@@ -73,6 +79,11 @@ class Target : public Object {
   // Absolute path to the target's compile output directory.
   const string& absolute_out_dir() const {
     return absolute_out_dir_;
+  }
+
+  // List of linker flags necessary for this target.
+  const string& linker_flags() const {
+    return linker_flags_;
   }
 
   virtual Res Resolve(Context* context);
@@ -95,12 +106,15 @@ class Target : public Object {
     return dep_hash_;
   }
 
+  virtual string GetLinkerArgs(const Context* context) const;
+
  protected:
   bool resolved_, processed_, dep_hash_was_set_;
   int resolve_recursion_;
-  vector<string> src_, dep_, inc_dirs_;
+  vector<string> src_, dep_, inc_dirs_, dep_inc_dirs_;
   string relative_path_to_tree_root_;
   string absolute_out_dir_;
+  string linker_flags_;
   Hash dep_hash_;
 };
 

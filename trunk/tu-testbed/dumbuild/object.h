@@ -43,6 +43,12 @@ class Object {
     return name_;
   }
 
+  // The path part of the name (i.e. our path relative to the project
+  // root).
+  const string& base_dir() const {
+    return base_dir_;
+  }
+
   const string& type() const {
     return type_;
   }
@@ -56,7 +62,7 @@ class Object {
   }
 
  protected:
-  string name_, type_;
+  string name_, type_, base_dir_;
 };
 
 #endif  // TARGET_H_

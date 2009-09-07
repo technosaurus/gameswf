@@ -105,14 +105,23 @@ Res LibTarget::Process(const Context* context) {
       res.AppendDetail("\nin directory " + absolute_out_dir());
       return res;
     }
+    context->LogVerbose("command line for " + name_ + ": " + cmd + "\n");
+
 
     // Write a build marker.
     res = WriteFileHash(absolute_out_dir(), output_fname, dep_hash_);
     if (!res.Ok()) {
       return res;
     }
+  } else {
+    context->LogVerbose("Not lib'ing " + name_ + "\n");
   }
 
   processed_ = true;
   return Res(OK);
+}
+
+string LibTarget::GetLinkerArgs(const Context* context) const {
+  return PathJoin(PathJoin(context->tree_root(), context->out_root()),
+                  name_) + context->GetConfig()->lib_extension();
 }

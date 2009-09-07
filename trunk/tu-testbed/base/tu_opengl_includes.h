@@ -11,12 +11,12 @@
 
 #include "base/tu_config.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #	include <windows.h>
 #	include <GL/gl.h>
 #	include <GL/glu.h>
 # define PROC_NAME_PREFIX
-#endif // WIN32
+#endif // _WIN32
 
 #ifdef __MACH__
 #	include <OpenGL/gl.h>
@@ -25,14 +25,14 @@
 #	define PROC_NAME_PREFIX
 #endif // __MACH__
 
-#if !defined(WIN32) && !defined(__MACH__)
+#if !defined(_WIN32) && !defined(__MACH__)
 #	include <GL/gl.h>
 #	include <GL/glu.h>
 #ifndef APIENTRY
 #	define APIENTRY
 #endif
 #	define PROC_NAME_PREFIX "glX"
-#endif // no WIN32 or OSX
+#endif // no _WIN32 or OSX
 
 // GL extension constants...
 // WK: is there no glext.h equivalent for this?

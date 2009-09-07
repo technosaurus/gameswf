@@ -10,7 +10,7 @@
 
 #include "base/tu_config.h"
 
-#ifdef TU_USE_OPENAL
+#if TU_USE_OPENAL == 1
 
 #include "gameswf/gameswf.h"
 #include "base/container.h"

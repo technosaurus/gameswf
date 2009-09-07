@@ -31,8 +31,6 @@
 string GetPath(const string& filename);
 string PathJoin(const string& a, const string& b);
 
-// current_dir must be canonical.
-//
 // relative_path might start with '#', and/or have relative elements.
 //
 // returns a canonical path.

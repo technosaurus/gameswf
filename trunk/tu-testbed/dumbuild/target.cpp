@@ -12,6 +12,25 @@ Target::Target()
       resolve_recursion_(0) {
 }
 
+static Res ParseCanonicalPathList(const Target* t, const Json::Value& list,
+                                   vector<string>* dirs) {
+  if (!list.isObject() && !list.isArray()) {
+    return Res(ERR_PARSE, "value is not object or array: " +
+               list.toStyledString());
+  }
+
+  for (Json::Value::iterator it = list.begin();
+       it != list.end();
+       ++it) {
+    if (!(*it).isString()) {
+      return Res(ERR_PARSE, "list value is not a string: " +
+                 (*it).toStyledString());
+    }
+    string dir_name = Canonicalize(t->base_dir(), (*it).asString());
+    dirs->push_back(dir_name);
+  }
+  return Res(OK);
+}
 
 Res Target::Init(const Context* context,
                  const string& name,
@@ -22,8 +41,6 @@ Res Target::Init(const Context* context,
   }
 
   context->LogVerbose(StringPrintf("Target::Init(): %s\n", name_.c_str()));
-
-  string this_path = FilenamePathPart(name_);
 
   // Initialize dependencies.
   if (value.isMember("dep")) {
@@ -41,7 +58,7 @@ Res Target::Init(const Context* context,
         return Res(ERR_PARSE, name_ + ": dep list value is not a string: " +
                    (*it).toStyledString());
       }
-      string depname = Canonicalize(this_path, (*it).asString());
+      string depname = Canonicalize(base_dir(), (*it).asString());
 
       dep_.push_back(depname);
     }
@@ -63,7 +80,7 @@ Res Target::Init(const Context* context,
         return Res(ERR_PARSE, name_ + ": src list value is not a string: " +
                    (*it).toStyledString());
       }
-      string srcname = Canonicalize(this_path, (*it).asString());
+      string srcname = Canonicalize(base_dir(), (*it).asString());
       src_.push_back(srcname);
     }
   }
@@ -71,25 +88,34 @@ Res Target::Init(const Context* context,
   // Initialize include dirs.
   if (value.isMember("inc_dirs")) {
     Json::Value inclist = value["inc_dirs"];
-    if (!inclist.isObject() && !inclist.isArray()) {
-      return Res(ERR_PARSE,
-                 name_ + ": inc_dirs value is not object or array: " +
-                 inclist.toStyledString());
-    }
-
-    for (Json::Value::iterator it = inclist.begin();
-         it != inclist.end();
-         ++it) {
-      if (!(*it).isString()) {
-        return Res(ERR_PARSE, name_ +
-                   ": inc_dirs list value is not a string: " +
-                   (*it).toStyledString());
-      }
-      string inc_dir_name = Canonicalize(this_path, (*it).asString());
-      inc_dirs_.push_back(inc_dir_name);
+    res = ParseCanonicalPathList(this, inclist, &inc_dirs_);
+    if (!res.Ok()) {
+      res.AppendDetail("while parsing inc_dirs in " + name_);
+      return res;
     }
   }
-  // TODO: collect additional inc dirs from dependencies.
+  // TODO: collect additional inc dirs from dependencies (?).
+
+  // Initialize include dirs that should be passed on to dependents.
+  if (value.isMember("dep_inc_dirs")) {
+    Json::Value dep_inclist = value["dep_inc_dirs"];
+    res = ParseCanonicalPathList(this, dep_inclist, &dep_inc_dirs_);
+    if (!res.Ok()) {
+      res.AppendDetail("while parsing dep_inc_dirs in " + name_);
+      return res;
+    }
+  }
+
+  if (value.isMember("linker_flags")) {
+    Json::Value srclist = value["linker_flags"];
+    res = ParseValueStringOrMap(context, NULL, srclist, "=", ";",
+                                &linker_flags_);
+    if (!res.Ok()) {
+      res.AppendDetail("\nwhile evaluating linker_flags field of target " +
+                       name_);
+      return res;
+    }
+  }
 
   return Res(OK, "");
 }
@@ -153,7 +179,7 @@ Res Target::ProcessDependencies(const Context* context) {
 }
 
 Res Target::BuildOutDirAndSetupPaths(const Context* context) {
-  string out_dir = PathJoin(context->out_root(), FilenamePathPart(name_));
+  string out_dir = PathJoin(context->out_root(), base_dir());
   Res res = CreatePath(context->tree_root(), out_dir);
   if (!res.Ok()) {
     res.AppendDetail("\nwhile creating output path for " + name_);
@@ -170,4 +196,8 @@ Res Target::BuildOutDirAndSetupPaths(const Context* context) {
   }
 
   return res;
+}
+
+string Target::GetLinkerArgs(const Context* context) const {
+  return "";
 }
