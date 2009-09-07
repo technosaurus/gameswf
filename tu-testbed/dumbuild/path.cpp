@@ -20,21 +20,26 @@ string PathJoin(const string& a, const string& b) {
 
   // Process any parent specs at the start of b.
   int b_start = 0;
-  while (b_start < b.size() && a_end > 0) {
-    if (b.find("../", b_start) == b_start) {
-      // Starts with ../
-      b_start += 3;
-    } else if (b.length() - b_start == 2 &&
-               b[b_start] == '.' && b[b_start + 1] == '.') {
-      // Whole of b is now ".."
-      b_start += 2;
-    } else {
-      break;
-    }
+  if ((a_end >= 3 && strncmp(a.c_str() + a_end - 3, "/..", 3) == 0)
+      || (a_end == 2 && strncmp(a.c_str(), "..", 2) == 0)) {
+    // a is a relative dir; don't lop off its relative specs.
+  } else {
+    while (b_start < b.size() && a_end > 0) {
+      if (b.find("../", b_start) == b_start) {
+        // Starts with ../
+        b_start += 3;
+      } else if (b.length() - b_start == 2 &&
+                 b[b_start] == '.' && b[b_start + 1] == '.') {
+        // Whole of b is now ".."
+        b_start += 2;
+      } else {
+        break;
+      }
 
-    a_end = a.rfind("/", a_end - 1);
-    if (a_end < 0) {
-      a_end = 0;
+      a_end = a.rfind("/", a_end - 1);
+      if (a_end < 0) {
+        a_end = 0;
+      }
     }
   }
 
@@ -136,6 +141,7 @@ void TestPath() {
   assert(Canonicalize("able", "baker") == "able/baker");
   assert(Canonicalize("able/", "baker") == "able/baker");
   assert(Canonicalize("baker/charlie", "#delta") == "delta");
+  assert(Canonicalize("baker/charlie", "#") == "");
   assert(Canonicalize("baker/charlie", "#../external") == "../external");
   assert(Canonicalize("baker/charlie", "..") == "baker");
   assert(Canonicalize("baker/charlie", "delta") == "baker/charlie/delta");
@@ -144,4 +150,8 @@ void TestPath() {
   assert(Canonicalize("baker/charlie", "../../delta") == "delta");
   assert(Canonicalize("baker/charlie", "../..") == "");
   assert(Canonicalize("baker/charlie", "../../../external") == "../external");
+
+  assert(PathJoin("a/b/c", "x/y/z") == "a/b/c/x/y/z");
+  assert(PathJoin("a/b/..", "x/y/z") == "a/b/../x/y/z");
+  assert(PathJoin("../..", "../x/y/z") == "../../../x/y/z");
 }

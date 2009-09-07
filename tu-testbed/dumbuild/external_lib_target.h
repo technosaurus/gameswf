@@ -1,16 +1,16 @@
-// lib_target.h -- Thatcher Ulrich <tu@tulrich.com> 2008
+// external_lib_target.h -- Thatcher Ulrich <tu@tulrich.com> 2009
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#ifndef LIB_TARGET_H_
-#define LIB_TARGET_H_
+#ifndef EXTERNAL_LIB_TARGET_H_
+#define EXTERNAL_LIB_TARGET_H_
 
 #include "target.h"
 
-class LibTarget : public Target {
+class ExternalLibTarget : public Target {
  public:
-  LibTarget();
+  ExternalLibTarget();
   Res Init(const Context* context,
 	   const string& name,
 	   const Json::Value& val);
@@ -20,4 +20,4 @@ class LibTarget : public Target {
   virtual string GetLinkerArgs(const Context* context) const;
 };
 
-#endif  // LIB_TARGET_H_
+#endif  // EXTERNAL_LIB_TARGET_H_

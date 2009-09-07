@@ -586,23 +586,23 @@ int	main(int argc, char *argv[])
 			if (do_sound)
 			{
 
-#ifdef TU_USE_SDL
+#if TU_USE_SDL == 1
 				sound = gameswf::create_sound_handler_sdl();
 #endif
 
-#ifdef TU_USE_OPENAL
+#if TU_USE_OPENAL == 1
 				sound = gameswf::create_sound_handler_openal();
 #endif
 
 				gameswf::set_sound_handler(sound);
 			}
 
-#ifdef TU_USE_SDL
+#if TU_USE_SDL == 1
 			render = gameswf::create_render_handler_ogl();
 			gameswf::set_render_handler(render);
 #endif
 
-#ifdef TU_USE_OGLES
+#if TU_USE_OGLES == 1
 			render = gameswf::create_render_handler_ogles();
 			gameswf::set_render_handler(render);
 #endif

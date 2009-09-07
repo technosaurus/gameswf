@@ -331,6 +331,73 @@ Res FlagFunc(const LispContext* lc, const LispValue& args, LispValue* result) {
   return Res(OK);
 }
 
+// Takes a project path and makes it absolute.
+//
+// ["abs_path", "../some/path"]
+// ["abs_path", "#../some/path"]
+// etc
+Res AbsPathFunc(const LispContext* lc, const LispValue& args,
+                LispValue* result) {
+  assert(args.type() == LispValue::ARRAY);
+
+  *result = LispValue();  // default result is NIL.
+
+  if (args.array_val().size() != 2) {
+    return Res(ERR_EVAL, "AbsPathFunc: needs exactly one arg");
+  }
+
+  string argval;
+  Res err = EvalToString(lc, args.array_val()[1u], &argval);
+  if (!err.Ok()) {
+    return err;
+  }
+
+  // TODO: need base_dir here!!!!
+  string canonical = Canonicalize("" /*xxx*/, argval);
+  *result = LispValue(PathJoin(lc->ctx()->tree_root(), canonical));
+
+  return Res(OK);
+}
+
+// Takes a string delimiter and joins the rest of the args together
+// with the delimiter.
+//
+// ["join", ",", "a", "b", "c"]  -->  "a,b,c"
+// etc
+Res JoinFunc(const LispContext* lc, const LispValue& args,
+             LispValue* result) {
+  assert(args.type() == LispValue::ARRAY);
+  *result = LispValue();  // default result is NIL.
+
+  if (args.array_val().size() < 2) {
+    return Res(ERR_EVAL, "JoinFunc: needs at least one arg");
+  }
+
+  string delimiter;
+  Res err = EvalToString(lc, args.array_val()[1u], &delimiter);
+  if (!err.Ok()) {
+    return err;
+  }
+
+  string str_result;
+  for (unsigned int i = 2; i < args.array_val().size(); i++) {
+    const Json::Value& this_arg = args.array_val()[i];
+    string this_str;
+    err = EvalToString(lc, this_arg, &this_str);
+    if (!err.Ok()) {
+      return err;
+    }
+
+    if (i > 2) {
+      str_result += delimiter;
+    }
+    str_result += this_str;
+  }
+  *result = LispValue(str_result);
+
+  return Res(OK);
+}
+
 // Returns the first result that has a key that equals test_expr.
 // Returns NIL if there's no match.
 //
@@ -448,6 +515,7 @@ Res OrFunc(const LispContext* lc, const LispValue& args, LispValue* result) {
 
 void InitEval() {
   s_inited = true;
+  s_functions["abs_path"] = AbsPathFunc;
   s_functions["case"] = CaseFunc;
   s_functions["config"] = ConfigFunc;
   s_functions["config_detected"] = ConfigDetectedFunc;
@@ -457,6 +525,7 @@ void InitEval() {
   s_functions["fill"] = FillFunc;
   s_functions["flag"] = FlagFunc;
   s_functions["if"] = IfFunc;
+  s_functions["join"] = JoinFunc;
   s_functions["or"] = OrFunc;
 }
 
@@ -692,6 +761,11 @@ void TestEvalToString() {
                     "\"/etc/veryunlikelyfilename0239840237432\"]")
          == "[]");
 #endif  // not _WIN32
+
+  // 'join'
+  assert(TestHelper("[\"join\", \":\", \"a\", \"b\"]") == "a:b");
+  assert(TestHelper("[\"join\", \", \", \"a\", \"1\", \"2\"]]") == "a, 1, 2");
+  assert(TestHelper("[\"join\", \", \"]") == "");
 }
 
 void TestConfigFunc() {

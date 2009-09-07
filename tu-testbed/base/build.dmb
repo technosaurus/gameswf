@@ -31,8 +31,14 @@
       "zlib_adapter.cpp"
     ],
     "inc_dirs": [
-      "../../../../jpeg-6b",
-      "../../../../libpng-1.2.8"
+      "#"
+    ],
+    "dep": [
+      "#sdl",
+      "#jpeglib",
+      "#ogl",
+      "#libpng",
+      "#zlib"
     ]
   }
 ]

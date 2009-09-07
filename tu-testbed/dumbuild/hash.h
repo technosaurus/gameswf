@@ -25,6 +25,8 @@ class Hash {
   Res AppendFile(const string& filename);
   void AppendData(const char* data, int size);
   void AppendString(const string& str);
+  void AppendInt(int i);
+  void AppendStringVec(const vector<string>& string_vec);
   void AppendHash(const Hash& h) {
     AppendData((const char*) h.data(), h.size());
   }
@@ -41,6 +43,14 @@ class Hash {
   }
   Hash& operator<<(const Hash& h) {
     AppendHash(h);
+    return *this;
+  }
+  Hash& operator<<(int i) {
+    AppendInt(i);
+    return *this;
+  }
+  Hash& operator<<(const vector<string>& string_vec) {
+    AppendStringVec(string_vec);
     return *this;
   }
 

@@ -6,6 +6,7 @@
 #include "dmb_types.h"
 #include "hash.h"
 #include "sha1.h"
+#include "util.h"
 
 Hash::Hash() {
   Reset();
@@ -22,7 +23,8 @@ bool Hash::InitFromReadable(const char readable[27]) {
 Res Hash::AppendFile(const char* filename) {
   if (!stb_sha1_file(h_, filename)) {
     Reset();
-    return Res(ERR_FILE_ERROR, filename);
+    return Res(ERR_FILE_ERROR, StringPrintf("Can't get file hash of '%s'",
+                                            filename));
   }
   return Res(OK);
 }
@@ -37,6 +39,17 @@ void Hash::AppendData(const char* data, int size) {
 
 void Hash::AppendString(const string& str) {
   AppendData(str.c_str(), str.length());
+}
+
+void Hash::AppendInt(int i) {
+  AppendData((const char*) &i, sizeof(i));
+}
+
+void Hash::AppendStringVec(const vector<string>& string_vec) {
+  AppendInt(string_vec.size());
+  for (size_t i = 0; i < string_vec.size(); i++) {
+    AppendString(string_vec[i]);
+  }
 }
 
 void Hash::operator=(const Hash& b) {

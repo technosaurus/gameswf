@@ -39,7 +39,7 @@
     "link_template": "${cl_exe} -nologo ${cflags} ${obj_list} ${lib_list} -Fe${basename}.exe -Fd${basename}.pdb",
 
     // This is the command-line template used to combine object files into a library.
-    "lib_template": "${lib_exe} -nologo -OUT:${basename}.lib ${obj_list} ${lib_list}",
+    "lib_template": "${lib_exe} -nologo -OUT:${basename}.lib ${obj_list}",
 
     "detected": ["file_exists", ["fill", "${cl_exe}"]],
   },
@@ -87,7 +87,7 @@
     "link_template": "\"${cl_exe}\" -nologo ${cflags} ${obj_list} ${lib_list} -Fe${basename}.exe -Fd${basename}.pdb",
 
     // This is the command-line template used to combine object files into a library.
-    "lib_template": "${lib_exe} -nologo -OUT:${basename}.lib ${obj_list} ${lib_list}",
+    "lib_template": "${lib_exe} -nologo -OUT:${basename}.lib ${obj_list}",
 
     "detected": ["file_exists", ["fill", "${cl_exe}"]],
   },
