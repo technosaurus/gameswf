@@ -90,7 +90,7 @@ Reader::parse( const char *beginDoc, const char *endDoc,
       nodes_.pop();
    nodes_.push( &root );
    
-   bool successful = readValue();
+   bool successful = readValue(NULL);
    Token token;
    skipCommentTokens( token );
    if ( collectComments_  &&  !commentsBefore_.empty() )
@@ -100,7 +100,7 @@ Reader::parse( const char *beginDoc, const char *endDoc,
 
 
 bool
-Reader::readValue()
+Reader::readValue(bool* wasArrayEndToken)
 {
    Token token;
    skipCommentTokens( token );
@@ -136,6 +136,15 @@ Reader::readValue()
    case tokenNull:
       currentValue() = Value();
       break;
+
+      // tulrich: help for parsing comma after last elem in array.
+   case tokenArrayEnd:
+      if (wasArrayEndToken) {
+         *wasArrayEndToken = true;
+         return false;
+      }
+      // else drop through to error!!!
+
    default:
       return addError( "Syntax error: value, object or array expected.", token );
    }
@@ -411,7 +420,7 @@ Reader::readObject( Token &tokenStart )
       }
       Value &value = currentValue()[ name ];
       nodes_.push( &value );
-      bool ok = readValue();
+      bool ok = readValue(NULL);
       nodes_.pop();
       if ( !ok ) // error already set
          return recoverFromError( tokenObjectEnd );
@@ -453,22 +462,39 @@ Reader::readArray( Token &tokenStart )
    int index = 0;
    while ( true )
    {
+      bool wasArrayEndToken = false;
       Value &value = currentValue()[ index++ ];
       nodes_.push( &value );
-      bool ok = readValue();
+      bool ok = readValue(&wasArrayEndToken);
       nodes_.pop();
+
+      // tulrich: allow comma at end of array!!!
+      if (wasArrayEndToken) {
+         currentValue().resize(index - 1);
+         return true;
+      }
+      
       if ( !ok ) // error already set
          return recoverFromError( tokenArrayEnd );
 
       Token token;
       if ( !readToken( token ) 
            ||  ( token.type_ != tokenArraySeparator  &&  
-                 token.type_ != tokenArrayEnd ) )
+                 token.type_ != tokenArrayEnd &&
+                 token.type_ != tokenComment /* tulrich: allow comment */) )
       {
          return addErrorAndRecover( "Missing ',' or ']' in array declaration", 
                                     token, 
                                     tokenArrayEnd );
       }
+
+      // tulrich: allow comments at end of array
+      bool finalizeTokenOk = true;
+      while ( token.type_ == tokenComment &&
+              finalizeTokenOk )
+         finalizeTokenOk = readToken( token );
+      // tulrich: allow comments at end of array
+
       if ( token.type_ == tokenArrayEnd )
          break;
    }

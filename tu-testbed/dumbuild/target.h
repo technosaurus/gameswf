@@ -70,6 +70,11 @@ class Target : public Object {
     return dep_inc_dirs_;
   }
 
+  // Per-target cflags.
+  const string& target_cflags() const {
+    return target_cflags_;
+  }
+
   // Relative path from the target's compile output directory back up
   // to the tree root.
   const string& relative_path_to_tree_root() const {
@@ -81,9 +86,16 @@ class Target : public Object {
     return absolute_out_dir_;
   }
 
-  // List of linker flags necessary for this target.
+  // List of linker flags necessary when linking with this target.
   const string& linker_flags() const {
     return linker_flags_;
+  }
+
+  // List of additional libs to add to linker command line of linkable
+  // targets that depend on this target.  (Mainly applicable to
+  // external_lib targets.)
+  const vector<string>& dep_libs() const {
+    return dep_libs_;
   }
 
   virtual Res Resolve(Context* context);
@@ -111,7 +123,8 @@ class Target : public Object {
  protected:
   bool resolved_, processed_, dep_hash_was_set_;
   int resolve_recursion_;
-  vector<string> src_, dep_, inc_dirs_, dep_inc_dirs_;
+  vector<string> src_, dep_, inc_dirs_, dep_inc_dirs_, dep_libs_;
+  string target_cflags_;
   string relative_path_to_tree_root_;
   string absolute_out_dir_;
   string linker_flags_;

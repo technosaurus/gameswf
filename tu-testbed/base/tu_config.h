@@ -54,7 +54,7 @@
 // your build.  Be aware of what you're doing -- it may break
 // features!
 #ifndef TU_CONFIG_LINK_TO_LIBPNG
-#define TU_CONFIG_LINK_TO_LIBPNG 0
+#define TU_CONFIG_LINK_TO_LIBPNG 1
 #endif
 
 // define TU_CONFIG_LINK_TO_LIB3DS to 1 to include 3DS file support in

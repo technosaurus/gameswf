@@ -15,5 +15,6 @@ void RunSelfTests();
 // source files.
 void TestPath();
 void TestEval();
+void TestUtil();
 
 #endif  // TEST_H_

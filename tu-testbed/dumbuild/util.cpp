@@ -11,6 +11,18 @@
 #include "util.h"
 #include "eval.h"
 
+string Join(const char* delimiter, const vector<string>& to_join) {
+  string result;
+  if (to_join.size()) {
+    result = to_join[0];
+  }
+  for (size_t i = 1; i < to_join.size(); i++) {
+    result += delimiter;
+    result += to_join[i];
+  }
+  return result;
+}
+
 string StripExt(const string& filename) {
   size_t last_slash = filename.rfind('/');
   size_t last_dot = filename.rfind('.');
@@ -170,7 +182,7 @@ Res ParseValueStringOrMap(const Context* ctx,
 #endif
 
 string StringPrintf(const char* format, ...) {
-  const int BUFSIZE = 4096;
+  const int BUFSIZE = 65536;
   char buf[BUFSIZE];
 
   va_list args;
@@ -179,9 +191,6 @@ string StringPrintf(const char* format, ...) {
   int result = VSNPRINTF(buf, BUFSIZE, format, args);
   if (result == -1 || result >= BUFSIZE) {
     // Result truncated.  Fail.
-    //
-    // TODO: could try again with larger buffer, but for normal uses
-    // of this function there is likely to be some other problem.
     return string("(StringPrintf truncated)");
   }
   // Make extra double certain the string is terminated.
@@ -190,3 +199,22 @@ string StringPrintf(const char* format, ...) {
   return string(buf);
 }
 
+void TestJoin() {
+  vector<string> vec;
+  assert("" == Join("", vec));
+  assert("" == Join(" ", vec));
+  vec.push_back("a");
+  assert("a" == Join("", vec));
+  assert("a" == Join(" ", vec));
+  vec.push_back("b");
+  assert("ab" == Join("", vec));
+  assert("a b" == Join(" ", vec));
+  vec.push_back("cadabra");
+  assert("abcadabra" == Join("", vec));
+  assert("a b cadabra" == Join(" ", vec));
+  assert("a, b, cadabra" == Join(", ", vec));
+}
+
+void TestUtil() {
+  TestJoin();
+}

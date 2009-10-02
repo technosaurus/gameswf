@@ -46,8 +46,7 @@
 
 // for bitmap grubber
 #if TU_CONFIG_LINK_TO_LIBPNG
-	#include <png.h>
-	#include "base/png_helper.h"
+#include "base/png_helper.h"
 #endif
 
 namespace gameswf

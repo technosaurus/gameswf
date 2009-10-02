@@ -13,7 +13,7 @@
 class GenericTarget : public Target {
  public:
   GenericTarget() {
-    type_ = "generic";
+    set_type("generic");
   }
 
   Res Init(const Context* context,
@@ -24,7 +24,7 @@ class GenericTarget : public Target {
   
   virtual Res Resolve(Context* context) {
     context->LogVerbose(StringPrintf("GenericTarget Resolve: %s\n",
-                                     name_.c_str()));
+                                     name().c_str()));
     return Target::Resolve(context);
   }
 
@@ -34,7 +34,7 @@ class GenericTarget : public Target {
     }
 
     context->LogVerbose(StringPrintf("GenericTarget Process: %s\n",
-                                     name_.c_str()));
+                                     name().c_str()));
     processed_ = true;
     return Res(OK);
   }

@@ -92,7 +92,6 @@
       "#ogl"
     ],
     "inc_dirs": [
-      "#../../../zlib-1.2.2",
       "#"
     ]
   },
@@ -104,11 +103,11 @@
     ],
     "dep": [
       "#sdl",
+      "#sdlmain",
       "#ogl",
       "gameswf"
     ],
     "inc_dirs": [
-      "#../../../SDL-1.2.13/include",
       "#"
     ]
   }

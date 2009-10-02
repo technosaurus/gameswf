@@ -4,7 +4,8 @@
   { "name": "default",
     "type": "generic",
     "dep": [
-      "gameswf/default"
+      // "demos/font_output/default",
+      "gameswf/default",
     ]
   },
 
@@ -18,10 +19,20 @@
       "#../../../SDL-1.2.13/include"
     ],
 
-    "linker_flags":
-      ["join", " ",
-        ["abs_path", "#../../../SDL-1.2.13/lib/SDLmain.lib"],
-        ["abs_path", "#../../../SDL-1.2.13/lib/SDL.lib"]]
+    "dep_libs": [
+      "#../../../SDL-1.2.13/lib/SDL.lib"
+    ],
+  },
+  { "name": "sdlmain",
+    "type": "external_lib",
+
+    // Stupid SDL #defines away main() so it can insert its own
+    // wrapper at WinMain!  So we need to link as a windows prog.
+    "linker_flags": "-subsystem:windows",
+
+    "dep_libs": [
+      "#../../../SDL-1.2.13/lib/SDLmain.lib"
+    ]
   },
 
   // OpenGL
@@ -30,7 +41,7 @@
 
     // no special inc_dirs
 
-    "linker_flags": "opengl32.lib glu32.lib"
+    "dep_libs": ["#:opengl32.lib", "#:glu32.lib"]
   },
 
   // winsock / net libraries
@@ -39,64 +50,66 @@
 
     // no special inc_dirs
 
-    "linker_flags": "wsock32.lib"
+    "dep_libs": ["#:wsock32.lib"]
   },
 
   // jpeglib
   { "name": "jpeglib",
     "type": "lib",
 
+    "base_dir": "../../../jpeg-6b",
+
     "src": [
-      "../../../jpeg-6b/jcomapi.c",
-      "../../../jpeg-6b/jutils.c",
-      "../../../jpeg-6b/jerror.c",
-      "../../../jpeg-6b/jmemmgr.c",
-      "../../../jpeg-6b/jmemnobs.c",
-      "../../../jpeg-6b/jcapimin.c",
-      "../../../jpeg-6b/jcapistd.c",
-      "../../../jpeg-6b/jctrans.c",
-      "../../../jpeg-6b/jcparam.c",
-      "../../../jpeg-6b/jdatadst.c",
-      "../../../jpeg-6b/jcinit.c",
-      "../../../jpeg-6b/jcmaster.c",
-      "../../../jpeg-6b/jcmarker.c",
-      "../../../jpeg-6b/jcmainct.c",
-      "../../../jpeg-6b/jcprepct.c",
-      "../../../jpeg-6b/jccoefct.c",
-      "../../../jpeg-6b/jccolor.c",
-      "../../../jpeg-6b/jcsample.c",
-      "../../../jpeg-6b/jchuff.c",
-      "../../../jpeg-6b/jcphuff.c",
-      "../../../jpeg-6b/jcdctmgr.c",
-      "../../../jpeg-6b/jfdctfst.c",
-      "../../../jpeg-6b/jfdctflt.c",
-      "../../../jpeg-6b/jfdctint.c",
-      "../../../jpeg-6b/jdapimin.c",
-      "../../../jpeg-6b/jdapistd.c",
-      "../../../jpeg-6b/jdtrans.c",
-      "../../../jpeg-6b/jdatasrc.c",
-      "../../../jpeg-6b/jdmaster.c",
-      "../../../jpeg-6b/jdinput.c",
-      "../../../jpeg-6b/jdmarker.c",
-      "../../../jpeg-6b/jdhuff.c",
-      "../../../jpeg-6b/jdphuff.c",
-      "../../../jpeg-6b/jdmainct.c",
-      "../../../jpeg-6b/jdcoefct.c",
-      "../../../jpeg-6b/jdpostct.c",
-      "../../../jpeg-6b/jddctmgr.c",
-      "../../../jpeg-6b/jidctfst.c",
-      "../../../jpeg-6b/jidctflt.c",
-      "../../../jpeg-6b/jidctint.c",
-      "../../../jpeg-6b/jidctred.c",
-      "../../../jpeg-6b/jdsample.c",
-      "../../../jpeg-6b/jdcolor.c",
-      "../../../jpeg-6b/jquant1.c",
-      "../../../jpeg-6b/jquant2.c",
-      "../../../jpeg-6b/jdmerge.c"
+      "jcomapi.c",
+      "jutils.c",
+      "jerror.c",
+      "jmemmgr.c",
+      "jmemnobs.c",
+      "jcapimin.c",
+      "jcapistd.c",
+      "jctrans.c",
+      "jcparam.c",
+      "jdatadst.c",
+      "jcinit.c",
+      "jcmaster.c",
+      "jcmarker.c",
+      "jcmainct.c",
+      "jcprepct.c",
+      "jccoefct.c",
+      "jccolor.c",
+      "jcsample.c",
+      "jchuff.c",
+      "jcphuff.c",
+      "jcdctmgr.c",
+      "jfdctfst.c",
+      "jfdctflt.c",
+      "jfdctint.c",
+      "jdapimin.c",
+      "jdapistd.c",
+      "jdtrans.c",
+      "jdatasrc.c",
+      "jdmaster.c",
+      "jdinput.c",
+      "jdmarker.c",
+      "jdhuff.c",
+      "jdphuff.c",
+      "jdmainct.c",
+      "jdcoefct.c",
+      "jdpostct.c",
+      "jddctmgr.c",
+      "jidctfst.c",
+      "jidctflt.c",
+      "jidctint.c",
+      "jidctred.c",
+      "jdsample.c",
+      "jdcolor.c",
+      "jquant1.c",
+      "jquant2.c",
+      "jdmerge.c"
     ],
 
    "dep_inc_dirs": [
-      "#../../../jpeg-6b"
+      ""
     ],
   },
 
@@ -108,7 +121,7 @@
       "#../../../libpng-1.2.8"
     ],
 
-    "linker_flags": ["abs_path", "#../../../libpng-1.2.8/libpng.lib"]
+    "dep_libs": ["#../../../libpng-1.2.8/libpng.lib"]
   },
 
   // zlib
@@ -119,7 +132,99 @@
       "#../../../zlib-1.2.2"
     ],
 
-    "linker_flags": ["abs_path", "#../../../zlib-1.2.2/zlib.lib"]
+    "dep_libs": ["#../../../zlib-1.2.2/zlib.lib"]
+  },
+
+  // freetype -- build from source.  Easier than getting their build
+  // system to work w/ the right options!
+  { "name": "freetype",
+    "type": "lib",
+
+    // Need a good way to find the source tree, although this
+    // could perhaps be configured somewhere else.  Or maybe it's not
+    // a required feature.
+    //
+    // maybe something like:
+    //  "find_library": ["find_library",
+    //     ["freetype*", "/usr/lib", "/usr/local/lib"],  /* dir pattern(s) */
+    //     ["include/freetype/freetype.h", "freetype/freetype.h"]  /* success patterns */
+    //  ]
+    //
+    // or
+    //  
+    //  "base_dir_searcher": {
+    //     "basesearchpaths": [
+    //         "", "src", "third_party", "/usr/local/src", "/usr/src"],
+    //     "basepatterns": ["freetype", "freetype-*"]],
+    //     "detected": ["and",
+    //        // (In relation to a candidate ${base_dir}).
+    //        ["file_exists", "include/freetype2/freetype.h"],
+    //        ["file_exists", "src/base/ftapi.c"]]
+    //  },
+    //  // and then the src files etc are in relation to the detected base_dir,
+    //  // like:
+    //  "src": [ "src/autofit/autofit.c", ... ],
+    //  "inc_dirs": ["include/freetype/internal", ...]
+
+    "base_dir": "../../../freetype-2.3.5/src",
+    "src": [
+      "autofit/autofit.c",
+      "base/ftapi.c",
+      "base/ftbase.c",
+      "base/ftbbox.c",
+      "base/ftbdf.c",
+      "base/ftbitmap.c",
+      "base/ftdebug.c",
+      "base/ftgasp.c",
+      "base/ftglyph.c",
+      "base/ftgxval.c",
+      "base/ftinit.c",
+      "base/ftlcdfil.c",
+      "base/ftmm.c",
+      "base/ftotval.c",
+      "base/ftpatent.c",
+      "base/ftpfr.c",
+      "base/ftstroke.c",
+      "base/ftsynth.c",
+      "base/ftsystem.c",
+      "base/fttype1.c",
+      "base/ftwinfnt.c",
+      "base/ftxf86.c",
+      "bdf/bdf.c",
+      "cache/ftcache.c",
+      "cff/cff.c",
+      "cid/type1cid.c",
+      "gzip/ftgzip.c",
+      "lzw/ftlzw.c",
+      "pcf/pcf.c",
+      "pfr/pfr.c",
+      "psaux/psaux.c",
+      "pshinter/pshinter.c",
+      "psnames/psnames.c",
+      "raster/raster.c",
+      "sfnt/sfnt.c",
+      "smooth/smooth.c",
+      "truetype/truetype.c",
+      "type1/type1.c",
+      "type42/type42.c",
+      "winfonts/winfnt.c"
+    ],
+
+    "inc_dirs": [
+      "#../include/freetype/internal",
+      "#../include/freetype",
+      "#../include",
+    ],
+
+    "dep": [
+      "#zlib"
+    ],
+
+    "target_cflags": "-DFT2_BUILD_LIBRARY",
+
+    "dep_inc_dirs": [
+      "#../include/freetype",
+      "#../include",
+    ]
   }
-  
 ]

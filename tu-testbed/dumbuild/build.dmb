@@ -9,15 +9,19 @@
   
   { "name": "jsonlib",
     "type": "lib",
+    "base_dir": "jsoncpp/src/lib_json",
     "src": [
-      "jsoncpp/src/lib_json/json_reader.cpp",
-      "jsoncpp/src/lib_json/json_value.cpp",
-      "jsoncpp/src/lib_json/json_writer.cpp"
+      "json_reader.cpp",
+      "json_value.cpp",
+      "json_writer.cpp"
     ],
     "inc_dirs": [
-      "jsoncpp/include",
-      "jsoncpp/src/lib_json"
-    ]
+      "../../include",
+      ""
+    ],
+    "dep_inc_dirs": [
+      "../../include",
+    ],
   },
 
   { "name": "dmb",
@@ -49,9 +53,5 @@
     "dep": [
       "jsonlib"
     ],
-    "inc_dirs": [
-      "jsoncpp/include",
-      "jsoncpp/src/lib_json"
-    ]
   }
 ]

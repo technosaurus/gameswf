@@ -11,7 +11,7 @@
 #include "util.h"
 
 ExternalLibTarget::ExternalLibTarget() {
-  type_ = "external_lib";
+  set_type("external_lib");
 }
 
 Res ExternalLibTarget::Init(const Context* context, const string& name,
@@ -22,13 +22,13 @@ Res ExternalLibTarget::Init(const Context* context, const string& name,
 
 Res ExternalLibTarget::Resolve(Context* context) {
   context->LogVerbose(StringPrintf("ExternalLibTarget Resolve: %s\n",
-				   name_.c_str()));
+				   name().c_str()));
   // Default Resolve() is OK.
   return Target::Resolve(context);
 }
 
 Res ExternalLibTarget::Process(const Context* context) {
-  dep_hash_ << "external_lib_dep_hash" << name_;
+  dep_hash_ << "external_lib_dep_hash" << name();
   dep_hash_ << dep();
   dep_hash_ << linker_flags();
   dep_hash_ << inc_dirs();
@@ -39,5 +39,5 @@ Res ExternalLibTarget::Process(const Context* context) {
 }
 
 string ExternalLibTarget::GetLinkerArgs(const Context* context) const {
-  return linker_flags();
+  return string();
 }
