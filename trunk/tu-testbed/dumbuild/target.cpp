@@ -12,7 +12,7 @@ Target::Target()
       resolve_recursion_(0) {
 }
 
-static Res ParseCanonicalPathList(const Target* t, const Json::Value& list,
+static Res ParseCanonicalPathList(const string& base_dir, const Json::Value& list,
                                    vector<string>* dirs) {
   if (!list.isObject() && !list.isArray()) {
     return Res(ERR_PARSE, "value is not object or array: " +
@@ -26,28 +26,33 @@ static Res ParseCanonicalPathList(const Target* t, const Json::Value& list,
       return Res(ERR_PARSE, "list value is not a string: " +
                  (*it).toStyledString());
     }
-    string dir_name = Canonicalize(t->base_dir(), (*it).asString());
+    string dir_name = Canonicalize(base_dir, (*it).asString());
     dirs->push_back(dir_name);
   }
   return Res(OK);
 }
 
 Res Target::Init(const Context* context,
-                 const string& name,
+                 const string& target_name,
                  const Json::Value& value) {
-  Res res = Object::Init(context, name, value);
+  Res res = Object::Init(context, target_name, value);
   if (!res.Ok()) {
     return res;
   }
 
-  context->LogVerbose(StringPrintf("Target::Init(): %s\n", name_.c_str()));
+  context->LogVerbose(StringPrintf("Target::Init(): %s\n", name().c_str()));
+
+  if (value.isMember("base_dir")) {
+    Json::Value val = value["base_dir"];
+    set_base_dir(Canonicalize(name_dir(), val.asString()));
+  }
 
   // Initialize dependencies.
   if (value.isMember("dep")) {
     Json::Value deplist = value["dep"];
     if (!deplist.isObject() && !deplist.isArray()) {
       return Res(ERR_PARSE,
-                 name_ + ": dep value is not object or array: " +
+                 name() + ": dep value is not object or array: " +
                  deplist.toStyledString());
     }
 
@@ -55,10 +60,10 @@ Res Target::Init(const Context* context,
          it != deplist.end();
          ++it) {
       if (!(*it).isString()) {
-        return Res(ERR_PARSE, name_ + ": dep list value is not a string: " +
+	      return Res(ERR_PARSE, name() + ": dep list value is not a string: " +
                    (*it).toStyledString());
       }
-      string depname = Canonicalize(base_dir(), (*it).asString());
+      string depname = Canonicalize(name_dir(), (*it).asString());
 
       dep_.push_back(depname);
     }
@@ -69,7 +74,7 @@ Res Target::Init(const Context* context,
     Json::Value srclist = value["src"];
     if (!srclist.isObject() && !srclist.isArray()) {
       return Res(ERR_PARSE,
-                 name_ + ": src value is not object or array: " +
+                 name() + ": src value is not object or array: " +
                  srclist.toStyledString());
     }
 
@@ -77,7 +82,7 @@ Res Target::Init(const Context* context,
          it != srclist.end();
          ++it) {
       if (!(*it).isString()) {
-        return Res(ERR_PARSE, name_ + ": src list value is not a string: " +
+        return Res(ERR_PARSE, name() + ": src list value is not a string: " +
                    (*it).toStyledString());
       }
       string srcname = Canonicalize(base_dir(), (*it).asString());
@@ -88,9 +93,9 @@ Res Target::Init(const Context* context,
   // Initialize include dirs.
   if (value.isMember("inc_dirs")) {
     Json::Value inclist = value["inc_dirs"];
-    res = ParseCanonicalPathList(this, inclist, &inc_dirs_);
+    res = ParseCanonicalPathList(base_dir(), inclist, &inc_dirs_);
     if (!res.Ok()) {
-      res.AppendDetail("while parsing inc_dirs in " + name_);
+      res.AppendDetail("while parsing inc_dirs in " + name());
       return res;
     }
   }
@@ -99,9 +104,19 @@ Res Target::Init(const Context* context,
   // Initialize include dirs that should be passed on to dependents.
   if (value.isMember("dep_inc_dirs")) {
     Json::Value dep_inclist = value["dep_inc_dirs"];
-    res = ParseCanonicalPathList(this, dep_inclist, &dep_inc_dirs_);
+    res = ParseCanonicalPathList(base_dir(), dep_inclist, &dep_inc_dirs_);
     if (!res.Ok()) {
-      res.AppendDetail("while parsing dep_inc_dirs in " + name_);
+      res.AppendDetail("while parsing dep_inc_dirs in " + name());
+      return res;
+    }
+  }
+
+  // Initialize libs that should be linked with dependents.
+  if (value.isMember("dep_libs")) {
+    Json::Value dep_liblist = value["dep_libs"];
+    res = ParseCanonicalPathList(base_dir(), dep_liblist, &dep_libs_);
+    if (!res.Ok()) {
+      res.AppendDetail("while parsing dep_libs in " + name());
       return res;
     }
   }
@@ -112,7 +127,18 @@ Res Target::Init(const Context* context,
                                 &linker_flags_);
     if (!res.Ok()) {
       res.AppendDetail("\nwhile evaluating linker_flags field of target " +
-                       name_);
+                       name());
+      return res;
+    }
+  }
+
+  if (value.isMember("target_cflags")) {
+    Json::Value val = value["target_cflags"];
+    res = ParseValueStringOrMap(context, NULL, val, "=", ";",
+                                &target_cflags_);
+    if (!res.Ok()) {
+      res.AppendDetail("\nwhile evaluating target_cflags field of target " +
+                       name());
       return res;
     }
   }
@@ -130,7 +156,7 @@ Res Target::Resolve(Context* context) {
   }
 
   if (!resolved()) {
-    context->LogVerbose(StringPrintf("Target Resolve: %s\n", name_.c_str()));
+    context->LogVerbose(StringPrintf("Target Resolve: %s\n", name().c_str()));
 
     // Try to Resolve() all our dependencies.
     for (size_t i = 0; i < dep().size(); i++) {
@@ -160,7 +186,7 @@ Res Target::Resolve(Context* context) {
 
 Res Target::ProcessDependencies(const Context* context) {
   context->LogVerbose(StringPrintf("Target ProcessDependencies: %s\n",
-                                   name_.c_str()));
+                                   name().c_str()));
   // TODO: once dmb does a topological sort of targets, this can just
   // be a series of asserts to make sure it worked right.
   
@@ -179,10 +205,10 @@ Res Target::ProcessDependencies(const Context* context) {
 }
 
 Res Target::BuildOutDirAndSetupPaths(const Context* context) {
-  string out_dir = PathJoin(context->out_root(), base_dir());
+  string out_dir = PathJoin(context->out_root(), name_dir());
   Res res = CreatePath(context->tree_root(), out_dir);
   if (!res.Ok()) {
-    res.AppendDetail("\nwhile creating output path for " + name_);
+    res.AppendDetail("\nwhile creating output path for " + name());
     return res;
   }
 

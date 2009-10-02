@@ -8,7 +8,8 @@ C++.  The goals include:
   Domain.  Easy to embed in larger open-source projects -- no external
   dependencies, no license restrictions.
 
-* Simple and sane config language (based on JSON syntax).
+* Simple and sane config language (based on JSON syntax).  Emphasize a
+  literal, declarative style.
 
 * Written in garden-variety C++ -- hackable and extendable by C++
   programmers.
@@ -81,8 +82,8 @@ Options:
 
 The output goes in dmb-out/&lt;config-name&gt;/
 
-Without any options, "dmb" builds the target "default" the default
-configuration "default".
+Without any options, "dmb" builds the target "default" using the
+default configuration "default".
 
 Example:
 
@@ -116,6 +117,42 @@ Build Language
 The build language syntax is JSON ("Javascript Object Notation").
 
 TODO explain semantics
+
+Alternatives
+============
+
+There are many build tools in the world -- why another one?  Partly
+for fun, but mostly to scratch an itch: there is no ideal single build
+tool for a medium-sized open source project that wants to support both
+Windows and non-Windows platforms.  Here's a rundown of my take on the
+top contenders:
+
+[[http://redmine.jamplex.org/projects/show/jamplus][JamPlus]] is
+closest to the ideal.  The minor knocks on it are that it's not
+trivial to bootstrap, and in my opinion the config language is hard to
+use.  People use it for big commercial projects and it has a
+reputation for excellent speed.
+
+[[http://www.scons.org/][Scons]] is full of features and has a
+reasonable config language (based on Python).  But, it's written in
+Python, it's not tiny, and unfortunately it can be egregiously slow on
+big projects.  I don't think it's a great choice for embedding in a
+small or medium-sized open-source project, mainly because it would be
+bigger than the typical host project, and it has a dependency on
+Python.
+
+GNU make is what I have used for a long time for my own open-source
+stuff.  It's fast, fairly ubiquitous, and I'm used to it.  I don't
+mind it too much, but it's not the most elegant thing, the header
+dependency checking is terrible, and it seems to perplex most Windows
+programmers.
+
+Project file generators like cmake and gyp have increased in
+popularity, and have some adherents.  Personally I have a deep-seated
+dislike for anything that relies on Visual Studio as a build tool.
+Same with Xcode on Mac.  I prefer to use the same non-GUI build tool
+across multiple platforms.
+
 
 Notes
 =====
@@ -175,36 +212,25 @@ Notes
   compile relatively small & fast, and should provide everything
   necessary.
 
-Alternatives
-------------
+* TODO: '#:' syntax for inhibiting dep_libs path prepend is hacky
 
-There are many build tools in the world -- why another one?  Partly
-for fun, but mostly to scratch an itch: there is no ideal single build
-tool for a medium-sized open source project that wants to support both
-Windows and non-Windows platforms.  Here's a rundown of my take on the
-top contenders:
+* TODO: gcc doesn't echo the source files as it compiles them, but
+  msvc does.  Need to echo ourselves, or figure out the option that
+  makes gcc echo.
 
-[[http://redmine.jamplex.org/projects/show/jamplus][JamPlus]] is
-closest to the ideal.  The minor knocks on it are that it's not
-trivial to bootstrap, and in my opinion the config language is hard to
-use.  People use it for big commercial projects and it has a
-reputation for excellent speed.
+* TODO: in a big list of src's, if there's a compile failure in the
+  middle, none of the src hashes are updated, so the whole set of
+  files has to be recompiled.  Would be nice to figure out which
+  .obj's can get their hashes updated, so they don't have to be
+  recompiled after the coder fixes the problem with the failed file.
 
-[[http://www.scons.org/][Scons]] is full of features and has a
-reasonable config language (based on Python).  But, it's written in
-Python, it's not tiny, and unfortunately it can be egregiously slow on
-big projects.  I don't think it's a great choice for embedding in a
-small or medium-sized open-source project, mainly because it would be
-bigger than the typical host project, and it has a dependency on
-Python.
+  Actually, this is important for correctness too since if a source file
+  has a new obj, but doesn't get an updated hash, and then the coder
+  reverts the source to its previous state, the dep will match the old
+  source but the real .obj file is new!  So dumbuild will think it
+  doesn't need to rebuild the .obj
 
-GNU make is what I have used for a long time for my own open-source
-stuff.  It's fast, fairly ubiquitous, and I'm used to it.  I don't
-mind it too much, but it's not the most elegant thing, the header
-dependency checking is terrible, and it seems to perplex most Windows
-programmers.
+  (Could trivially fix this by only compiling one src file per
+  invocation of the compiler, but that could be a performance
+  regression.)
 
-Project file generators like cmake and gyp have increased in
-popularity, and have some adherents.  Personally I have a deep-seated
-dislike for anything that relies on Visual Studio as a build tool.
-Same with Xcode on Mac.  It's just the wrong approach for my projects.

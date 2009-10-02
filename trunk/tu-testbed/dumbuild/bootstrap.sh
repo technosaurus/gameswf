@@ -13,6 +13,7 @@ sources="../../compile_util.cpp \
     ../../context.cpp \
     ../../dumbuild.cpp \
     ../../eval.cpp \
+    ../../external_lib_target.cpp \
     ../../exe_target.cpp \
     ../../file_deps.cpp \
     ../../hash.cpp \

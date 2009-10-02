@@ -12,7 +12,7 @@
 #include "util.h"
 
 ExeTarget::ExeTarget() {
-  type_ = "exe";
+  set_type("exe");
 }
 
 Res ExeTarget::Init(const Context* context, const string& name,
@@ -27,7 +27,7 @@ Res ExeTarget::Init(const Context* context, const string& name,
 }
 
 Res ExeTarget::Resolve(Context* context) {
-  context->LogVerbose(StringPrintf("ExeTarget Resolve: %s\n", name_.c_str()));
+	context->LogVerbose(StringPrintf("ExeTarget Resolve: %s\n", name().c_str()));
   // Default Resolve() is OK.
   return Target::Resolve(context);
 }
@@ -45,12 +45,12 @@ Res ExeTarget::Process(const Context* context) {
     return Res(OK);
   }
 
-  context->Log(StringPrintf("dmb processing exe %s\n", name_.c_str()));
+  context->Log(StringPrintf("dmb processing exe %s\n", name().c_str()));
 
   Res res;
   res = Target::ProcessDependencies(context);
   if (!res.Ok()) {
-    res.AppendDetail("\nwhile processing dependencies of " + name_);
+    res.AppendDetail("\nwhile processing dependencies of " + name());
     return res;
   }
 
@@ -62,14 +62,14 @@ Res ExeTarget::Process(const Context* context) {
   const Config* config = context->GetConfig();
 
   // Read existing build marker, if any.
-  string output_fname = FilenameFilePart(name_) + config->exe_extension();
+  string output_fname = FilenameFilePart(name()) + config->exe_extension();
   Hash previous_dep_hash;
   res = ReadFileHash(absolute_out_dir(), output_fname, &previous_dep_hash);
   // Ignore return value; we don't care!
 
   assert(dep_hash_was_set_ == false);
   dep_hash_.Reset();
-  dep_hash_ << "exe_dep_hash" << name_ << config->prefilled_link_template();
+  dep_hash_ << "exe_dep_hash" << name() << config->prefilled_link_template();
 
   CompileInfo ci;
   res = PrepareCompileVars(this, context, &ci, &dep_hash_);
@@ -90,7 +90,7 @@ Res ExeTarget::Process(const Context* context) {
   } else {
     if (ci.src_list_.size()) {
       // This is sort of unexpected; let's print something.
-      context->Log("warning: exe_target " + name_ + " has apparently "
+      context->Log("warning: exe_target " + name() + " has apparently "
                    "not changed, but some component obj files may "
                    "be missing!\n");
     }
@@ -98,17 +98,17 @@ Res ExeTarget::Process(const Context* context) {
 
   if (do_build) {
     // Link.
-    context->Log(StringPrintf("Linking %s\n", name_.c_str()));
+    context->Log(StringPrintf("Linking %s\n", name().c_str()));
     string cmd;
     res = FillTemplate(config->prefilled_link_template(), ci.vars_, false,
                        &cmd);
     if (!res.Ok()) {
-      res.AppendDetail("\nwhile preparing linker command line for " + name_);
+      res.AppendDetail("\nwhile preparing linker command line for " + name());
       return res;
     }
     res = RunCommand(absolute_out_dir(), cmd, config->compile_environment());
     if (!res.Ok()) {
-      res.AppendDetail("\nwhile linking " + name_);
+      res.AppendDetail("\nwhile linking " + name());
       res.AppendDetail("\nin directory " + absolute_out_dir());
       return res;
     }

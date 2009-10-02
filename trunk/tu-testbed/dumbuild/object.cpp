@@ -47,7 +47,8 @@ Res Object::Create(const Context* context, const string& path,
 Res Object::Init(const Context* context, const string& name,
                  const Json::Value& value) {
   name_ = name;
-  base_dir_ = FilenamePathPart(name_);
+  name_dir_ = FilenamePathPart(name_);
+  base_dir_ = name_dir_;
   context->LogVerbose(StringPrintf("Object::Init(): %s\n", name_.c_str()));
 
   return Res(OK);

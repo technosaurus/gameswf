@@ -46,4 +46,6 @@ void SplitFileName(const string& name, string* path_part,
 string FilenamePathPart(const string& name);
 string FilenameFilePart(const string& name);
 
+bool IsAbsolute(const string& name);
+
 #endif  // PATH_H_

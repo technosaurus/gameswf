@@ -44,7 +44,14 @@ class Object {
   }
 
   // The path part of the name (i.e. our path relative to the project
-  // root).
+  // root).  Used as a base dir for dep references.
+  const string& name_dir() const {
+    return name_dir_;
+  }
+
+  // Dir used as a base path for src, inc_dirs, dep_inc_dirs, and
+  // dep_libs references.  Defaults to name_dir(), but can be
+  // overridden.
   const string& base_dir() const {
     return base_dir_;
   }
@@ -62,7 +69,19 @@ class Object {
   }
 
  protected:
-  string name_, type_, base_dir_;
+  void set_base_dir(const char* d) {
+    base_dir_ = d;
+  }
+  void set_base_dir(const string& d) {
+    base_dir_ = d;
+  }
+
+  void set_type(const char* t) {
+    type_ = t;
+  }
+
+ private:
+  string name_, type_, name_dir_, base_dir_;
 };
 
 #endif  // TARGET_H_

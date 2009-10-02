@@ -9,4 +9,5 @@
 void RunSelfTests() {
   TestPath();
   TestEval();
+  TestUtil();
 }

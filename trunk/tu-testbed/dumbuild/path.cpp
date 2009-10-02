@@ -99,7 +99,7 @@ bool IsFileNamePart(const string& path) {
 }
 
 void SplitFileName(const string& name, string* path_part,
-                          string* name_part) {
+                   string* name_part) {
   size_t split_point = name.rfind('/');
 
   if (split_point < name.length() - 1) {
@@ -131,6 +131,21 @@ string FilenameFilePart(const string& name) {
   return file_part;
 }
 
+bool IsAbsolute(const string& name) {
+  if (name.size() && name[0] == '/') {
+    // Unix's idea of absolute.  Probably won't hurt on Windows.
+    return true;
+  }
+  if (name.size() >= 3 &&
+      (name[0] == 'c' || name[0] == 'C') &&  // TODO: allow other drive letters?
+      name[1] == ':' &&
+      (name[2] == '/' || name[2] == '\\')) {
+    // Windows' idea of absolute.  Probably won't hurt on Unix.
+    return true;
+  }
+  return false;
+}
+
 // Tests -----------------------------------------------------------------
 
 void TestPath() {
@@ -150,8 +165,17 @@ void TestPath() {
   assert(Canonicalize("baker/charlie", "../../delta") == "delta");
   assert(Canonicalize("baker/charlie", "../..") == "");
   assert(Canonicalize("baker/charlie", "../../../external") == "../external");
+  assert(Canonicalize("baker/charlie", "#:test") == ":test");
 
   assert(PathJoin("a/b/c", "x/y/z") == "a/b/c/x/y/z");
   assert(PathJoin("a/b/..", "x/y/z") == "a/b/../x/y/z");
   assert(PathJoin("../..", "../x/y/z") == "../../../x/y/z");
+
+  assert(IsAbsolute("hello") == false);
+  assert(IsAbsolute("hello/there") == false);
+  assert(IsAbsolute("/hello") == true);
+  assert(IsAbsolute("c:/hello/there") == false);
+  assert(IsAbsolute("C:/hello/there") == false);
+  assert(IsAbsolute("c:\\hello\\there") == false);
+  assert(IsAbsolute("C:\\hello\\there") == false);
 }

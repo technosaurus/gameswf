@@ -18,6 +18,8 @@
 class Config;
 class Context;
 
+string Join(const char* delimiter, const vector<string>& to_join);
+
 // Return the filename with the extension (if any) removed.
 string StripExt(const string& filename);
 

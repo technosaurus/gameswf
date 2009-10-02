@@ -103,6 +103,7 @@ Res PrepareCompileVars(const Target* t, const Context* context,
   string src_list;
   string obj_list;
   string lib_list;
+  string linker_flags;
 
   // Build the src_list and obj_list.
   for (size_t i = 0; i < t->src().size(); i++) {
@@ -174,27 +175,56 @@ Res PrepareCompileVars(const Target* t, const Context* context,
                "target " + t->name());
   }
 
-  // Build the actual lib_list string.
+  // Build the actual lib_list and dep_link_flags strings.
   for (size_t i = 0; i < lib_list_array.size(); i++) {
     const Target* dep = lib_list_array[i];
     if (dep == t) {
       continue;
     }
 
-    string linker_args = dep->GetLinkerArgs(context);
-    if (linker_args.length() > 0) {
-      lib_list += " ";
-      lib_list += linker_args;
+    const string& this_lib_arg = dep->GetLinkerArgs(context);
+    if (this_lib_arg.size()) {
+      if (lib_list.size()) {
+        lib_list += " ";
+      }
+      lib_list += this_lib_arg;
     }
-  }
 
-  // TODO: append external dependency libs to lib_list
+    for (size_t j = 0; j < dep->dep_libs().size(); j++) {
+      if (lib_list.length() > 0) {
+        lib_list += " ";
+      }
+      const string& lib = dep->dep_libs()[j];
+      if (lib.size() >= 1 && lib[0] == ':') {
+        // Special signal meaning don't try to munge the path.
+        // In the build file it's probably declared like:
+        //    "#:libname.lib"
+        // TODO: maybe this is gross trickery?
+        lib_list += string(lib, 1);
+      } else if (IsAbsolute(lib)) {
+        // Take it as it is.
+        lib_list += lib;
+      } else {
+        // Project-relative; prepend relative path to project root.
+        lib_list += t->relative_path_to_tree_root();
+        lib_list += lib;
+      }
+    }
+
+    const string& dep_linker_flags = dep->linker_flags();
+    if (linker_flags.length() > 0) {
+      linker_flags += " ";
+    }
+    linker_flags += dep_linker_flags;
+  }
 
   ci->vars_["src_list"] = src_list;
   ci->vars_["obj_list"] = obj_list;
   ci->vars_["lib_list"] = lib_list;
   ci->vars_["basename"] = FilenameFilePart(t->name());
   ci->vars_["inc_dirs"] = inc_dirs_str;
+  ci->vars_["target_cflags"] = t->target_cflags();
+  ci->vars_["linker_flags"] = linker_flags;
 
   return Res(OK);
 }
