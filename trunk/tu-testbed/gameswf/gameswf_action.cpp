@@ -285,6 +285,11 @@ namespace gameswf
 			m->add_action_buffer(&m_buf);
 		}
 
+		virtual void	execute_now(character* m)
+		{
+			m_buf.execute(m->get_environment());
+		}
+
 		// Don't override because actions should not be replayed when seeking the movie.
 		//void	execute_state(character* m) {}
 
@@ -573,8 +578,20 @@ namespace gameswf
 		character*	original_target = env->get_target();
 		membuf & buffer = *m_buffer.get_ptr();
 
-		int	stop_pc = start_pc + exec_bytes;
-		for (int pc = start_pc; pc < stop_pc; )
+		int stop_pc = start_pc + exec_bytes;
+		bool found_error = false;
+		tu_string error_detail;
+
+// Error out if there are fewer than n elements on the stack.
+#define CHECK_STACK(n)							\
+		if (env->size() < n) {					\
+			found_error = true;				\
+			error_detail = string_printf("opcode 0x%X: invalid stack error, needs %d elements but only has %d\n", \
+						     action_id, n, env->size()); \
+			break;						\
+		}
+
+		for (int pc = start_pc; pc < stop_pc && !found_error; )
 		{
 			// Cleanup any expired "with" blocks.
 			while (with_stack.size() > 0
@@ -584,7 +601,7 @@ namespace gameswf
 				with_stack.resize(with_stack.size() - 1);
 			}
 			
-#if ACTION_BUFFER_PROFILLING
+#if ACTION_BUFFER_PROFILING
 			Uint64 start_time;
 			start_time = tu_timer::get_profile_ticks();
 #endif
@@ -1282,6 +1299,7 @@ namespace gameswf
 				}
 				case 0x48:	// less than (typed)
 				{
+					CHECK_STACK(2);
 					if (env->top(1).is_string())
 					{
 						env->top(1).set_bool(env->top(1).to_tu_string() < env->top(0).to_tu_string());
@@ -1295,6 +1313,7 @@ namespace gameswf
 				}
 				case 0x49:	// equal (typed)
 				{
+					CHECK_STACK(2);
 					// @@ identical to untyped equal, as far as I can tell...
 					env->top(1).set_bool(env->top(1) == env->top(0));
 					env->drop(1);
@@ -1302,22 +1321,26 @@ namespace gameswf
 				}
 				case 0x4A:	// to number
 				{
+					CHECK_STACK(1);
 					double n = env->top(0).to_number();
 					env->top(0).set_double(n);
 					break;
 				}
 				case 0x4B:	// to string
 				{
+					CHECK_STACK(1);
 					const tu_string& str = env->top(0).to_tu_string();
 					env->top(0).set_tu_string(str);
 					break;
 				}
 				case 0x4C:	// dup
+					CHECK_STACK(1);
 					env->push(env->top(0));
 					break;
 				
 				case 0x4D:	// swap
 				{
+					CHECK_STACK(2);
 					as_value	temp = env->top(1);
 					env->top(1) = env->top(0);
 					env->top(0) = temp;
@@ -1325,6 +1348,7 @@ namespace gameswf
 				}
 				case 0x4E:	// get member
 				{
+					CHECK_STACK(2);
 					// keep alive 'obj'
 					gc_ptr<as_object>	obj = env->top(1).to_object();
 					if (obj == NULL)
@@ -1379,6 +1403,7 @@ namespace gameswf
 				}
 				case 0x4F:	// set member
 				{
+					CHECK_STACK(3);
 					as_object*	obj = env->top(2).to_object();
 					if (obj)
 					{
@@ -1403,13 +1428,16 @@ namespace gameswf
 					break;
 				}
 				case 0x50:	// increment
+					CHECK_STACK(1);
 					env->top(0) += 1;
 					break;
 				case 0x51:	// decrement
+					CHECK_STACK(1);
 					env->top(0) -= 1;
 					break;
 				case 0x52:	// call method
 				{
+					CHECK_STACK(3);
 					int	nargs = env->top(2).to_int();
 					as_value	result;
 					const tu_string&	method_name = env->top(0).to_tu_string();
@@ -1581,6 +1609,7 @@ namespace gameswf
 
 				case 0x54:	// instance of
 				{
+					CHECK_STACK(2);
 					const as_function* constructor = env->top(0).to_function();
 					bool ret = env->top(1).is_instance_of(constructor);
 					env->top(1).set_bool(ret);
@@ -1590,39 +1619,48 @@ namespace gameswf
 
 				case 0x55:	// enumerate object
 				{
+					CHECK_STACK(1);
 					as_value variable = env->pop();
 					enumerate(env, variable.to_object());
 					break;
 				}
 				case 0x60:	// bitwise and
+					CHECK_STACK(2);
 					env->top(1) &= env->top(0).to_int();
 					env->drop(1);
 					break;
 				case 0x61:	// bitwise or
+					CHECK_STACK(2);
 					env->top(1) |= env->top(0).to_int();
 					env->drop(1);
 					break;
 				case 0x62:	// bitwise xor
+					CHECK_STACK(2);
 					env->top(1) ^= env->top(0).to_int();
 					env->drop(1);
 					break;
 				case 0x63:	// shift left
+					CHECK_STACK(2);
 					env->top(1).shl(env->top(0).to_int());
 					env->drop(1);
 					break;
 				case 0x64:	// shift right (signed)
+					CHECK_STACK(2);
 					env->top(1).asr(env->top(0).to_int());
 					env->drop(1);
 					break;
 				case 0x65:	// shift right (unsigned)
+					CHECK_STACK(2);
 					env->top(1).lsr(env->top(0).to_int());
 					env->drop(1);
 					break;
 				case 0x66:	// strict equal
+					CHECK_STACK(2);
 					env->top(1).set_bool(env->top(1) == env->top(0));
 					env->drop(1);
 					break;
 				case 0x67:	// gt (typed)
+					CHECK_STACK(2);
 					if (env->top(1).is_string())
 					{
 						env->top(1).set_bool(env->top(1).to_tu_string() > env->top(0).to_tu_string());
@@ -1634,11 +1672,13 @@ namespace gameswf
 					env->drop(1);
 					break;
 				case 0x68:	// string gt
+					CHECK_STACK(2);
 					env->top(1).set_bool(env->top(1).to_tu_string() > env->top(0).to_tu_string());
 					env->drop(1);
 					break;
 
 				case 0x69:	// extends
+					CHECK_STACK(2);
 
 					// These steps are the equivalent to the following ActionScript:
 					// Subclass.prototype = new Object();
@@ -1724,6 +1764,7 @@ namespace gameswf
 
 				case 0x87:	// store_register
 				{
+					CHECK_STACK(1);
 					int	reg = buffer[pc + 3];
 					// Save top of stack in specified register.
 					if (is_function2)
@@ -1792,6 +1833,7 @@ namespace gameswf
 
 				case 0x8D:	// wait for frame expression (?)
 				{
+					CHECK_STACK(1);
 					// Pop the frame number to wait for; if it's not loaded skip the
 					// specified number of actions.
 					//
@@ -1913,6 +1955,7 @@ namespace gameswf
 
 				case 0x94:	// with
 				{
+					CHECK_STACK(1);
 					IF_VERBOSE_ACTION(log_msg("-------------- with block start: stack size is %d\n", with_stack.size()));
 					if (with_stack.size() < 8) //todo, depends on flash version, could be 16
 					{
@@ -2102,6 +2145,7 @@ namespace gameswf
 				
 				case 0x9A:	// get url2
 				{
+					CHECK_STACK(2);
 					int	method = buffer[pc + 3];
 					const char*	url = env->top(1).to_string();
 
@@ -2221,6 +2265,7 @@ namespace gameswf
 
 				case 0x9D:	// branch if true
 				{
+					CHECK_STACK(1);
 					Sint16	offset = buffer[pc + 3] | (buffer[pc + 4] << 8);
 					
 					bool	test = env->top(0).to_bool();
@@ -2245,6 +2290,7 @@ namespace gameswf
 				}
 				case 0x9E:	// call frame
 				{
+					CHECK_STACK(1);
 					// Note: no extra data in this instruction!
 					assert(env->get_target() != NULL);
 					env->get_target()->call_frame_actions(env->top(0));
@@ -2255,6 +2301,7 @@ namespace gameswf
 
 				case 0x9F:	// goto frame expression, goto_frame_exp
 				{
+					CHECK_STACK(1);
 					// From Alexi's SWF ref:
 					//
 					// Pop a value or a string and jump to the specified
@@ -2324,7 +2371,7 @@ namespace gameswf
 				pc = next_pc;
 			}
 			
-#if ACTION_BUFFER_PROFILLING
+#if ACTION_BUFFER_PROFILING
 			if( profiling_table.find( action_id ) != profiling_table.end() )
 			{
 				profiling_table.set( action_id, 0 );
@@ -2334,9 +2381,14 @@ namespace gameswf
 		}
 
 		env->set_target(original_target);
+
+		if (found_error) {
+			log_error("%s", error_detail.c_str());
+			// TODO: return error back up to caller.
+		}
 	}
 
-#if ACTION_BUFFER_PROFILLING
+#if ACTION_BUFFER_PROFILING
 	void action_buffer::log_and_reset_profiling( void )
 	{
 		log_msg( "--------------------\n" );

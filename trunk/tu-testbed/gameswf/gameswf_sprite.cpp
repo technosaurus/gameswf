@@ -322,10 +322,10 @@ namespace gameswf
 			on_event(event_id::ENTER_FRAME);
 		}
 
-		do_actions();
-
 		// Advance everything in the display list.
 		m_display_list.advance(delta_time);
+
+		do_actions();
 
 		m_on_event_load_called = true;
 
@@ -375,7 +375,7 @@ namespace gameswf
 				for (int i= 0; i < init_actions->size(); i++)
 				{
 					execute_tag*	e = (*init_actions)[i];
-					e->execute(this);
+					e->execute_now(this);
 				}
 
 				// Mark this frame done, so we never execute these init actions

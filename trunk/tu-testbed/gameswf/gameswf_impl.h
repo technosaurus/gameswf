@@ -140,6 +140,7 @@ namespace gameswf
 	{
 		virtual ~execute_tag() {}
 		virtual void	execute(character* m) {}
+		virtual void	execute_now(character* m) { execute(m); }
 		virtual void	execute_state(character* m) {}
 		virtual void	execute_state_reverse(character* m, int frame) { execute_state(m); }
 		virtual bool	is_remove_tag() const { return false; }

@@ -165,6 +165,10 @@
     //  // like:
     //  "src": [ "src/autofit/autofit.c", ... ],
     //  "inc_dirs": ["include/freetype/internal", ...]
+    //
+    //  "optional_deps": ["blah", "blah"],
+    // in a dep:
+    //  ?? "not_found_message": "" // any purpose to this?
 
     "base_dir": "../../../freetype-2.3.5/src",
     "src": [
