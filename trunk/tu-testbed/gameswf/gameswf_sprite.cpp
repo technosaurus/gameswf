@@ -148,6 +148,7 @@ namespace gameswf
 			"onReleaseOutside",
 			"onRollout",
 			"onRollover",
+			"onMouseMove",
 		};
 
 		if (is_enabled())

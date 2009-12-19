@@ -1052,10 +1052,6 @@
 				RelativePath="..\..\gameswf_render_handler_ogl.cpp"
 				>
 			</File>
-			<File
-				RelativePath="..\..\gameswf_render_handler_ogles.cpp"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>
