@@ -62,14 +62,15 @@ namespace gameswf
 				//
 				// I take that to mean that the not-found case shouldn't be handled as an error, but rather as
 				// as a perfectly normal case.
-				character* pTarget = fn.env->get_target();
-				def = new character_def(pTarget->get_player());
-				movie_definition_sub* pMovie = (movie_definition_sub*)pTarget->get_root_movie();
+
+				character* target = fn.env->get_target();
+				def = new character_def(target->get_player());
+				movie_definition_sub* movie = (movie_definition_sub*) target->get_root_movie();
 				as_function* func = cast_to<as_function>(fn.arg(1).to_object());
 				if (func)
 				{
 					IF_VERBOSE_ACTION(log_msg("registerClass '%s' (new)\n",	fn.arg(0).to_string()));
-					pMovie->export_resource(fn.arg(0).to_tu_string(), def);
+					movie->export_resource(fn.arg(0).to_tu_string(), def);
 					fn.result->set_bool(true);
 					def->set_registered_class_constructor(func);
 				}
@@ -708,10 +709,6 @@ namespace gameswf
 			as_value prototype_constructor;
 			if (prototype->get_ctor(&prototype_constructor))
 			{
-				// HST:
-				// Changed "set_ctor" to "create_proto", which should create the parents' hierarchy of protos
-				// Before the change, there were problems with calling "super.xxx()"
-				// (see also changes in as_object_registerclass())
 				m_proto->create_proto(prototype_constructor);
 			}
 		}

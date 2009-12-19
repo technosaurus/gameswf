@@ -13,7 +13,7 @@ import commands
 import difflib
 import re
 
-GAMESWF = "./gameswf_test_ogl"
+GAMESWF = "../dmb-out/vc9-debug/gameswf/gameswf_test_ogl"
 BATCH_ARGS = " -r 0 -1 -t 10 -v "
 
 
