@@ -46,14 +46,33 @@ namespace gameswf
 				as_function* func = cast_to<as_function>(fn.arg(1).to_object());
 				if (func)
 				{
-					IF_VERBOSE_ACTION(log_msg("registerClass '%s'\n",	fn.arg(0).to_string()));
+					IF_VERBOSE_ACTION(log_msg("registerClass '%s' (overwrite)\n",	fn.arg(0).to_string()));
 					fn.result->set_bool(true);
 					def->set_registered_class_constructor(func);
 				}
 			}
 			else
 			{
-				log_error("can't find exported resource '%s'\n", fn.arg(0).to_string());
+				// HST:
+				// From the documentation of registerClass:
+				//		"Associates a movie clip symbol with an ActionScript object class. 
+				//		If a symbol doesn't exist, Flash creates an association between a string identifier and an object class. 
+				//
+				//		If a symbol is already registered to a class, this method replaces it with the new registration."
+				//
+				// I take that to mean that the not-found case shouldn't be handled as an error, but rather as
+				// as a perfectly normal case.
+				character* pTarget = fn.env->get_target();
+				def = new character_def(pTarget->get_player());
+				movie_definition_sub* pMovie = (movie_definition_sub*)pTarget->get_root_movie();
+				as_function* func = cast_to<as_function>(fn.arg(1).to_object());
+				if (func)
+				{
+					IF_VERBOSE_ACTION(log_msg("registerClass '%s' (new)\n",	fn.arg(0).to_string()));
+					pMovie->export_resource(fn.arg(0).to_tu_string(), def);
+					fn.result->set_bool(true);
+					def->set_registered_class_constructor(func);
+				}
 			}
 		}
 	}
@@ -689,7 +708,11 @@ namespace gameswf
 			as_value prototype_constructor;
 			if (prototype->get_ctor(&prototype_constructor))
 			{
-				m_proto->set_ctor(prototype_constructor);
+				// HST:
+				// Changed "set_ctor" to "create_proto", which should create the parents' hierarchy of protos
+				// Before the change, there were problems with calling "super.xxx()"
+				// (see also changes in as_object_registerclass())
+				m_proto->create_proto(prototype_constructor);
 			}
 		}
 
