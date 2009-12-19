@@ -1063,7 +1063,7 @@ namespace gameswf
 			// clone a previous external loaded movie ?
 			if (get_id() == -1)	
 			{
-				ch = new sprite_instance(get_player(), cast_to<movie_def_impl>(m_def.get_ptr()), 
+					ch = new sprite_instance(get_player(), cast_to<movie_definition_sub>(m_def.get_ptr()),
 					get_root(),	parent,	-1);
 
 				ch->set_parent(parent);
