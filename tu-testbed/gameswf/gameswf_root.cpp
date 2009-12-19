@@ -210,11 +210,26 @@ namespace gameswf
 			}
 		}
 
+		if (ms->m_x != ms->m_x_last || ms->m_y != ms->m_y_last)
+		{
+			if (active_entity != NULL)
+			{
+				active_entity->on_event(event_id::MOUSE_MOVE);
+			}
+			else
+			if (topmost_entity != NULL)
+			{
+				topmost_entity->on_event(event_id::MOUSE_MOVE);
+			}
+		}
+
 		// Write the (possibly modified) gc_ptr copies back
 		// into the state struct.
 		ms->m_active_entity = active_entity;
 		ms->m_topmost_entity = topmost_entity;
 		ms->m_mouse_button_state_last = ms->m_mouse_button_state_current;
+		ms->m_x_last = ms->m_x;
+		ms->m_y_last = ms->m_y;
 	}
 
 	// movie info
@@ -595,6 +610,8 @@ namespace gameswf
 		m_mouse_button_state.m_topmost_entity = te;
 
 		m_mouse_button_state.m_mouse_button_state_current = (m_mouse_buttons & 1);
+		m_mouse_button_state.m_x = m_mouse_x;
+		m_mouse_button_state.m_y = m_mouse_y;
 		generate_mouse_button_events(&m_mouse_button_state);
 
 		// advance Action script objects (interval timers, xmlsocket, ...)

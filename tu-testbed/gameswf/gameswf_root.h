@@ -43,11 +43,17 @@ namespace gameswf
 		bool	m_mouse_button_state_current;		// current state of mouse button
 
 		bool	m_mouse_inside_entity_last;	// whether mouse was inside the active_entity last frame
+		int		m_x;
+		int		m_y;
+		int		m_x_last;
+		int		m_y_last;
 
 		mouse_button_state() :
 			m_mouse_button_state_last(0),
 			m_mouse_button_state_current(0),
-			m_mouse_inside_entity_last(false)
+			m_mouse_inside_entity_last(false),
+			m_x_last(0),
+			m_y_last(0)
 		{
 		}
 	};
