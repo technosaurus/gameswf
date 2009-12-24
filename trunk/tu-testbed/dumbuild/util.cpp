@@ -307,6 +307,18 @@ void TestGlobMatch() {
   assert(GlobMatch("musk?", "musik") == false);
   assert(GlobMatch("musia?l", "musical") == false);
   assert(GlobMatch("musi??a", "musikal") == false);
+
+  assert(GlobMatch("\\*", "*") == true);
+  assert(GlobMatch("abc\\?", "abc?") == true);
+  assert(GlobMatch("abc\\d", "abcd") == true);
+  assert(GlobMatch("abc\\\\", "abc\\") == true);
+  assert(GlobMatch("ab*ef", "abcdef") == true);
+  assert(GlobMatch("*cd*", "abcdef") == true);
+  assert(GlobMatch("*sip\\*sic", "musip*sic") == true);
+
+  assert(GlobMatch("\\*", "a") == false);
+  assert(GlobMatch("abc\\?", "abcd") == false);
+  assert(GlobMatch("abc\\d", "abce") == false);
 }
 
 void TestUtil() {
