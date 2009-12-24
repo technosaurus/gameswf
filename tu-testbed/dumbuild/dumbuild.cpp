@@ -68,13 +68,17 @@ void PrintUsage() {
 
 */
 
-void ExitIfError(const Res& res) {
+void ExitIfError(const Res& res, const Context& context) {
   if (res.Ok()) {
     return;
   }
 
   fprintf(stderr, "dmb error\n");
-  fprintf(stderr, "%s: %s\n", res.ValueString(), res.detail());
+  fprintf(stderr, "%s\n", res.ToString().c_str());
+
+  if (context.log_verbose()) {
+    context.LogAllTargets();
+  }
 
   exit(1);
 }
@@ -122,12 +126,12 @@ int main(int argc, const char** argv) {
   Res res;
 
   res = context.ProcessArgs(argc, argv);
-  ExitIfError(res);
+  ExitIfError(res, context);
 
   string absolute_root;
   string canonical_currdir;
   res = FindRoot(&absolute_root, &canonical_currdir);
-  ExitIfError(res);
+  ExitIfError(res, context);
 
   context.LogVerbose(StringPrintf("absolute_root = %s\n",
 				  absolute_root.c_str()));
@@ -135,15 +139,17 @@ int main(int argc, const char** argv) {
 				  canonical_currdir.c_str()));
 
   res = context.Init(absolute_root, canonical_currdir);
-  ExitIfError(res);
+  ExitIfError(res, context);
 
   assert(context.GetConfig());
+  context.Log(StringPrintf("dmb config: %s\n",
+			   context.GetConfig()->name().c_str()));
 
   res = context.Resolve();
-  ExitIfError(res);
+  ExitIfError(res, context);
 
   res = context.ProcessTargets();
-  ExitIfError(res);
+  ExitIfError(res, context);
 
   context.Log("dmb OK\n");
 

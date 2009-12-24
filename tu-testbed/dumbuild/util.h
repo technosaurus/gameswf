@@ -86,4 +86,7 @@ class ScopedIncrement {
   int* counter_ptr_;
 };
 
+// Return true if the given value matches the given glob pattern.
+bool GlobMatch(const string& glob_pattern, const string& value);
+
 #endif  // UTIL_H_

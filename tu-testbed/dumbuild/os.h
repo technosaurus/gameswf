@@ -43,5 +43,7 @@ Res RunCommand(const string& dir,
 string GetCurrentDir();
 Res ChangeDir(const char* newdir);
 
-#endif  // OS_H_
+// Collect the subdirectories of the given path.
+Res GetSubdirectories(const string& path, vector<string>* out);
 
+#endif  // OS_H_

@@ -22,6 +22,7 @@ enum ResValue {
   ERR_SUBCOMMAND_FAILED,
   ERR_END_OF_FILE,
   ERR_FILE_NOT_FOUND,
+  ERR_DIR_NOT_FOUND,
   ERR_FILE_ERROR,
   ERR_UNDEFINED_TARGET,
   ERR_DEPENDENCY_CYCLE,
@@ -45,6 +46,7 @@ class ResValueStrings {
     ADD_STR(ERR_SUBCOMMAND_FAILED);
     ADD_STR(ERR_END_OF_FILE);
     ADD_STR(ERR_FILE_NOT_FOUND);
+    ADD_STR(ERR_DIR_NOT_FOUND);
     ADD_STR(ERR_FILE_ERROR);
     ADD_STR(ERR_UNDEFINED_TARGET);
     ADD_STR(ERR_DEPENDENCY_CYCLE);
@@ -56,12 +58,12 @@ class ResValueStrings {
     assert(strings_.size() == RES_VALUE_COUNT);
   }
 
-  const char* ValueString(ResValue val) {
+  const string& ValueString(ResValue val) {
     map<int, string>::iterator it = strings_.find(val);
     if (it == strings_.end()) {
       assert(0);
     }
-    return it->second.c_str();
+    return it->second;
   }
 
  private:
@@ -111,8 +113,12 @@ class Res {
     return "";
   }
 
-  const char* ValueString() const {
+  const string& ValueString() const {
     return g_res_value_strings.ValueString(value());
+  }
+
+  string ToString() const {
+    return ValueString() + ": " + detail();
   }
 
   bool Ok() const {
