@@ -3,6 +3,7 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
+#include <algorithm>
 #include "os.h"
 #include "util.h"
 
@@ -290,4 +291,88 @@ Res EraseFile(const string& path) {
     return Res(OK);
   }
   return Res(ERR_FILE_ERROR, "Can't unlink " + path);
+}
+
+Res GetSubdirectories(const string& path, vector<string>* out) {
+  assert(out);
+  out->resize(0);
+  string dot_dir = ".";
+  string dotdot_dir = "..";
+
+#ifdef _WIN32
+  WIN32_FIND_DATA find_data;
+  string path_arg = path;
+  if (path_arg.size() > 0 && (path_arg[path_arg.size() - 1] == '/' ||
+                              path_arg[path_arg.size() - 1] == '\\')) {
+    path_arg.resize(path_arg.size() - 1);
+  }
+  path_arg += "\\*";
+  HANDLE h = FindFirstFile(path_arg.c_str(), &find_data);
+  if (h == INVALID_HANDLE_VALUE) {
+    return Res(ERR_FILE_ERROR, "GetSubdirectories(): couldn't open directory " +
+               path);
+  }
+  do {
+    if (find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY &&
+        dot_dir != find_data.cFileName &&
+        dotdot_dir != find_data.cFileName) {
+      out->push_back(find_data.cFileName);
+    }
+  } while (FindNextFile(h, &find_data) != 0);
+
+  DWORD err = GetLastError();
+  if (err != ERROR_NO_MORE_FILES) {
+    return Res(ERR_FILE_ERROR, StringPrintf("GetSubdirectories(): windows "
+                                            "error 0x%X", err));
+  }
+  FindClose(h);
+
+#else  // not _WIN32
+  DIR* dp;
+  struct dirent* ep;
+  dp = opendir((path + "/").c_str());
+  if (dp == NULL) {
+    return Res(ERR_FILE_ERROR, "GetSubdirectories(): couldn't open directory " +
+               path);
+  } else {
+    while (ep = readdir(dp)) {
+      if (ep->d_type & DT_DIR &&
+          dot_dir != ep->d_name && dotdot_dir != ep->d_name) {
+        out->push_back(ep->d_name);
+      }
+    }
+    closedir(dp);
+  }
+#endif  // not _WIN32
+
+  std::sort(out->begin(), out->end());
+
+  return Res(OK);
+}
+
+void TestGetSubdirectories() {
+#ifdef _WIN32
+  vector<string> dirs;
+  Res res = GetSubdirectories("c:/", &dirs);
+  assert(res.Ok());
+  assert(std::find(dirs.begin(), dirs.end(), "Windows") != dirs.end());
+  assert(std::find(dirs.begin(), dirs.end(), "Documents and Settings") !=
+         dirs.end());
+
+  res = GetSubdirectories("c:/Windows", &dirs);
+  assert(res.Ok());
+  assert(std::find(dirs.begin(), dirs.end(), "Fonts") != dirs.end());
+  assert(std::find(dirs.begin(), dirs.end(), "system") !=
+         dirs.end());
+
+#else  // not _WIN32
+  vector<string> dirs;
+  Res res = GetSubdirectories("/", &dirs);
+  assert(std::find(dirs.begin(), dirs.end(), "usr") != dirs.end());
+  assert(std::find(dirs.begin(), dirs.end(), "etc") != dirs.end());
+#endif  // not _WIN32
+}
+
+void TestOs() {
+  TestGetSubdirectories();
 }

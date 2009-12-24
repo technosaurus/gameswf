@@ -254,12 +254,14 @@ Res Context::ReadObjects(const string& canonical_path, const string& filename) {
 
 Res Context::Resolve() {
   for (size_t i = 0; i < specified_targets_.size(); i++) {
-    Target* target = GetTarget(specified_targets_[i]);
-    if (!target) {
-      return Res(ERR_UNKNOWN_TARGET, specified_targets_[i]);
+    Target* target = NULL;
+    Res res = GetOrLoadTarget(specified_targets_[i], &target);
+    if (!res.Ok()) {
+      return res;
     }
+    assert(target);
 
-    Res res = target->Resolve(this);
+    res = target->Resolve(this);
     if (!res.Ok()) {
       return res;
     }
@@ -355,7 +357,7 @@ string Context::GetArgValue(const char* argname) const {
 }
 
 string Context::AbsoluteFile(const string& canonical_path,
-                             const string& filename) {
+                             const string& filename) const {
   return PathJoin(tree_root(), PathJoin(canonical_path, filename));
 }
 
@@ -388,20 +390,19 @@ Res Context::GetOrLoadTarget(const string& canonical_name,
 
   // Maybe we need to load.
   string path_part = FilenamePathPart(canonical_name);
-  if (path_part.length()) {
-    Res res = ReadObjects(path_part, "build.dmb");
-    if (res.value() == ERR_ALREADY_LOADED) {
-      return Res(ERR_UNDEFINED_TARGET, canonical_name);
-    }
-    if (!res.Ok()) {
-      return res;
-    }
 
-    target = GetTarget(canonical_name);
-    if (target) {
-      *result = target;
-      return Res(OK);
-    }
+  Res res = ReadObjects(path_part, "build.dmb");
+  if (res.value() == ERR_ALREADY_LOADED) {
+    return Res(ERR_UNDEFINED_TARGET, canonical_name);
+  }
+  if (!res.Ok()) {
+    return res;
+  }
+
+  target = GetTarget(canonical_name);
+  if (target) {
+    *result = target;
+    return Res(OK);
   }
 
   return Res(ERR_UNDEFINED_TARGET, canonical_name);
@@ -422,4 +423,15 @@ void Context::Warning(const string& msg) const {
   // Maybe someday keep track of these separately.  E.g. perhaps have
   // a fail-on-warning option.  For now, just log.
   Log(msg);
+}
+
+void Context::LogAllTargets() const {
+  Log("---- targets begin\n");
+  for (map<string, Target*>::const_iterator it = targets_.begin();
+       it != targets_.end();
+       ++it) {
+    Log(it->first.c_str());
+    Log("\n");
+  }
+  Log("---- targets end\n");
 }

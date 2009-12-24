@@ -73,9 +73,13 @@ static void AppendIncDirs(const vector<string>& dirs,
                           string* out) {
   for (size_t i = 0; i < dirs.size(); i++) {
     *out += " -I";
-    // TODO: handle absolute inc_dirs
-    string inc_dir = PathJoin(path_to_root, dirs[i]);
-    *out += inc_dir;
+    const string& raw_inc_dir = dirs[i];
+    if (IsAbsolute(raw_inc_dir)) {
+      *out += raw_inc_dir;
+    } else {
+      string inc_dir = PathJoin(path_to_root, raw_inc_dir);
+      *out += inc_dir;
+    }
   }
 }
 
@@ -107,12 +111,19 @@ Res PrepareCompileVars(const Target* t, const Context* context,
 
   // Build the src_list and obj_list.
   for (size_t i = 0; i < t->src().size(); i++) {
-    string src_path = PathJoin(t->relative_path_to_tree_root(),
-                               t->src()[i]);
+    const string& raw_src_path = t->src()[i];
+    string src_path;
+    if (IsAbsolute(raw_src_path)) {
+      src_path = raw_src_path;
+    } else {
+      src_path = PathJoin(t->absolute_out_dir(),
+                          PathJoin(t->relative_path_to_tree_root(),
+                                   raw_src_path));
+    }
+    
     Hash current_hash;
-    res = AccumulateObjFileDepHash(
-        t, context, PathJoin(t->absolute_out_dir(), src_path),
-        inc_dirs_str, &current_hash);
+    res = AccumulateObjFileDepHash(t, context, src_path, inc_dirs_str,
+                                   &current_hash);
     if (!res.Ok()) {
       return res;
     }
@@ -138,7 +149,7 @@ Res PrepareCompileVars(const Target* t, const Context* context,
       } else {
         // No existing hash, so we have to compile the file.
         context->LogVerbose(StringPrintf("no file hash, %s: %s\n",
-                                         res.ValueString(), res.detail()));
+                                         res.ValueString().c_str(), res.detail()));
       }
     }
 
@@ -260,9 +271,16 @@ Res DoCompile(const Target* t, const Context* context, const CompileInfo& ci) {
   for (size_t i = 0; i < ci.src_list_.size(); i++) {
     const string& src_path = ci.src_list_[i];
     obj_dep_hash.Reset();
-    Res res = AccumulateObjFileDepHash(
-        t, context, PathJoin(t->absolute_out_dir(), src_path), inc_dirs_str,
-        &obj_dep_hash);
+
+    string abs_src_path;
+    if (IsAbsolute(src_path)) {
+      abs_src_path = src_path;
+    } else {
+      abs_src_path = PathJoin(t->absolute_out_dir(), src_path);
+    }
+
+    Res res = AccumulateObjFileDepHash(t, context, abs_src_path, inc_dirs_str,
+                                       &obj_dep_hash);
     if (!res.Ok()) {
       return res;
     }

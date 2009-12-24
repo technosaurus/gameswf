@@ -4,6 +4,8 @@
 // whatever you want with it.
 
 #include "target.h"
+#include "config.h"
+#include "eval.h"
 #include "os.h"
 #include "util.h"
 
@@ -47,6 +49,24 @@ Res Target::Init(const Context* context,
     set_base_dir(Canonicalize(name_dir(), val.asString()));
   }
 
+  if (value.isMember("base_dir_inherit")) {
+    string inherit_from_name = value["base_dir_inherit"].asString();
+    Target* inherit_from = context->GetTarget(inherit_from_name);
+    if (!inherit_from) {
+      return Res(ERR_PARSE, name() + ": base_dir_inherit can't find target " +
+                 inherit_from_name);
+    }
+    set_base_dir(inherit_from->base_dir());
+  }
+
+  if (value.isMember("base_dir_searcher")) {
+    Json::Value val = value["base_dir_searcher"];
+    res = BaseDirSearcher(context, val);
+    if (!res.Ok()) {
+      return res;
+    }
+  }
+
   // Initialize dependencies.
   if (value.isMember("dep")) {
     Json::Value deplist = value["dep"];
@@ -60,7 +80,7 @@ Res Target::Init(const Context* context,
          it != deplist.end();
          ++it) {
       if (!(*it).isString()) {
-	      return Res(ERR_PARSE, name() + ": dep list value is not a string: " +
+        return Res(ERR_PARSE, name() + ": dep list value is not a string: " +
                    (*it).toStyledString());
       }
       string depname = Canonicalize(name_dir(), (*it).asString());
@@ -163,6 +183,7 @@ Res Target::Resolve(Context* context) {
       Target* dependency = NULL;
       Res res = context->GetOrLoadTarget(dep()[i], &dependency);
       if (!res.Ok()) {
+        res.AppendDetail("\nwhile resolving " + name());
         return res;
       }
 
@@ -226,4 +247,116 @@ Res Target::BuildOutDirAndSetupPaths(const Context* context) {
 
 string Target::GetLinkerArgs(const Context* context) const {
   return "";
+}
+
+// Search for a base directory.
+Res Target::BaseDirSearcher(const Context* context, const Json::Value& value) {
+  // "base_search_paths"
+  vector<string> base_search_paths;
+  if (value.isMember("base_search_paths")) {
+    // TODO: make a helper for extracting Json obj/array into a vector<string>
+    Json::Value list = value["base_search_paths"];
+    if (!list.isObject() && !list.isArray()) {
+      return Res(ERR_PARSE,
+                 name() + ": base_search_paths value is not object or array: " +
+                 list.toStyledString());
+    }
+
+    for (Json::Value::iterator it = list.begin();
+         it != list.end();
+         ++it) {
+      if (!(*it).isString()) {
+        return Res(ERR_PARSE, name() + ": base_search_paths value is not "
+                              "a string: " +
+                              (*it).toStyledString());
+      }
+      string pathname = Canonicalize(name_dir(), (*it).asString());
+      base_search_paths.push_back(context->AbsoluteFile(pathname, ""));
+    }
+  } else {
+    return Res(ERR_PARSE, "base_dir_searcher requires a 'base_search_paths' "
+               "member.");
+  }
+
+  // "base_patterns"
+  vector<string> base_patterns;
+  if (value.isMember("base_patterns")) {
+    Json::Value list = value["base_patterns"];
+    if (!list.isObject() && !list.isArray()) {
+      return Res(ERR_PARSE,
+                 name() + ": base_patterns value is not object or array: " +
+                 list.toStyledString());
+    }
+
+    for (Json::Value::iterator it = list.begin();
+         it != list.end();
+         ++it) {
+      if (!(*it).isString()) {
+        return Res(ERR_PARSE, name() +
+                   ": base_patterns value is not a string: " +
+                   (*it).toStyledString());
+      }
+      base_patterns.push_back((*it).asString());
+    }
+  } else {
+    return Res(ERR_PARSE, "base_dir_searcher requires a 'base_patterns' "
+               "member.");
+  }
+
+  // "detected"
+  Json::Value detected_predicate;
+  if (value.isMember("detected")) {
+    detected_predicate = value["detected"];
+  }
+  if (!detected_predicate.isArray()) {
+    return Res(ERR_PARSE, name() +
+               ": base_dir_searcher -- 'detected' must be an evaluatable array");
+  }
+
+  // Look for a valid base dir
+  for (size_t i = 0; i < base_search_paths.size(); i++) {
+    const string& path = base_search_paths[i];
+    // Enumerate dirs under path.
+    vector<string> dirs;
+    Res res = GetSubdirectories(path, &dirs);
+    if (!res.Ok()) {
+      res.AppendDetail("\nin BaseDirSearcher");
+      context->LogVerbose(res.ToString() + "\n");
+      continue;
+    }
+    for (size_t d = 0; d < dirs.size(); d++) {
+      string dir = dirs[d];
+      string abs_dir = PathJoin(path, dir);
+      context->LogVerbose("BaseDirSearcher candidate " + abs_dir + "\n");
+      for (size_t j = 0; j < base_patterns.size(); j++) {
+        if (GlobMatch(base_patterns[j], dir)) {
+          context->LogVerbose("BaseDirSearcher glob match");
+
+          // Test this dir against the predicate.
+          context->LogVerbose("BaseDirSearcher testing candidate " + abs_dir +
+                              "\n");
+          string out;
+          Config config;
+          config.SetVar("base_dir", abs_dir);
+          Res res = EvalToString(context, &config, detected_predicate, &out);
+          if (!res.Ok()) {
+            context->LogVerbose("BaseDirSearcher eval error: " + res.ToString()
+                                + "\n");
+          } else if (out != "[]") {
+            // Found it!
+            context->LogVerbose("BaseDirSearcher success: " + abs_dir +
+                                "\n");
+            set_base_dir(abs_dir);
+            return Res(OK);
+          } else {
+            context->LogVerbose("BaseDirSearcher not detected, returned: " +
+                                out + "\n");
+          }
+        }
+      }
+    }
+  }
+
+  return Res(ERR_DIR_NOT_FOUND, "base_dir_searcher for '" + name() +
+             "' couldn't find a matching base dir.");
 }

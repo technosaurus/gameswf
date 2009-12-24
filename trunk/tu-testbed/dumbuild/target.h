@@ -120,6 +120,9 @@ class Target : public Object {
 
   virtual string GetLinkerArgs(const Context* context) const;
 
+ private:
+  Res BaseDirSearcher(const Context* context, const Json::Value& val);
+
  protected:
   bool resolved_, processed_, dep_hash_was_set_;
   int resolve_recursion_;

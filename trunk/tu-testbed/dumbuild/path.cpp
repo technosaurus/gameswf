@@ -173,9 +173,11 @@ void TestPath() {
 
   assert(IsAbsolute("hello") == false);
   assert(IsAbsolute("hello/there") == false);
+  assert(IsAbsolute("../hello") == false);
+  assert(IsAbsolute("../../hello/there") == false);
   assert(IsAbsolute("/hello") == true);
-  assert(IsAbsolute("c:/hello/there") == false);
-  assert(IsAbsolute("C:/hello/there") == false);
-  assert(IsAbsolute("c:\\hello\\there") == false);
-  assert(IsAbsolute("C:\\hello\\there") == false);
+  assert(IsAbsolute("c:/hello/there") == true);
+  assert(IsAbsolute("C:/hello/there") == true);
+  assert(IsAbsolute("c:\\hello\\there") == true);
+  assert(IsAbsolute("C:\\hello\\there") == true);
 }

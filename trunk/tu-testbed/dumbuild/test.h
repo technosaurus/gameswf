@@ -13,8 +13,9 @@ void RunSelfTests();
 
 // Sub-tests; declared here, but implemented in their respective
 // source files.
-void TestPath();
 void TestEval();
+void TestOs();
+void TestPath();
 void TestUtil();
 
 #endif  // TEST_H_

@@ -10,4 +10,5 @@ void RunSelfTests() {
   TestPath();
   TestEval();
   TestUtil();
+  TestOs();
 }

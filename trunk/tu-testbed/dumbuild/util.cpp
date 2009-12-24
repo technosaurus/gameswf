@@ -199,6 +199,60 @@ string StringPrintf(const char* format, ...) {
   return string(buf);
 }
 
+static bool GlobMatchAux(const char* g, const char* v) {
+  while (*g && *v) {
+    if (*g == '\\') {  // Literal character match.
+      g++;
+      if (*g != *v) {
+        return false;
+      }
+      g++;
+      v++;
+    } else if (*g == '*') {  // * matches any substring of value
+      // Try remaining glob against every substring of the remaining value.
+      g++;
+      if (*g == 0) {
+        return true;
+      }
+      while (*v) {
+        if (GlobMatchAux(g, v)) {
+          return true;
+        }
+        v++;
+      }
+      return false;
+    } else if (*g == '?') {  // ? matches any single character
+      g++;
+      v++;
+    } else if (*g == *v) {
+      // Match.
+      g++;
+      v++;
+    } else {
+      // Mismatch.
+      return false;
+    }
+  }
+
+  // Skip any trailing '*'s in the glob.
+  while (*g == '*') {
+    g++;
+  }
+
+  if (*g == 0 && *v == 0) {
+    return true;
+  }
+
+  return false;
+}
+
+bool GlobMatch(const string& glob_pattern, const string& value) {
+  const char* g = glob_pattern.c_str();
+  const char* v = value.c_str();
+
+  return GlobMatchAux(glob_pattern.c_str(), value.c_str());
+}
+
 void TestJoin() {
   vector<string> vec;
   assert("" == Join("", vec));
@@ -215,6 +269,47 @@ void TestJoin() {
   assert("a, b, cadabra" == Join(", ", vec));
 }
 
+void TestGlobMatch() {
+  assert(GlobMatch("*", "") == true);
+  assert(GlobMatch("*", "*a") == true);
+  assert(GlobMatch("*", "abcdef") == true);
+  assert(GlobMatch("ab*", "abcdef") == true);
+  assert(GlobMatch("ab*ef", "abcdef") == true);
+  assert(GlobMatch("*cd*", "abcdef") == true);
+  assert(GlobMatch("*sip*sic", "sipmusicstarsic") == true);
+
+  assert(GlobMatch("x*", "") == false);
+  assert(GlobMatch("*b", "*a") == false);
+  assert(GlobMatch("def*", "abcdef") == false);
+  assert(GlobMatch("jab*", "abcdef") == false);
+  assert(GlobMatch("ab*cef", "abcdef") == false);
+  assert(GlobMatch("*ce*", "abcdef") == false);
+  assert(GlobMatch("*sip*sic", "sipmusicstarsical") == false);
+
+  assert(GlobMatch("?", "x") == true);
+  assert(GlobMatch("??", "xy") == true);
+  assert(GlobMatch("???", "zyx") == true);
+  assert(GlobMatch("??*?", "zyx") == true);
+  assert(GlobMatch("?*?*?", "zyx") == true);
+  assert(GlobMatch("musi?", "music") == true);
+  assert(GlobMatch("musi?", "musik") == true);
+  assert(GlobMatch("musi?al", "musical") == true);
+  assert(GlobMatch("musi?al", "musikal") == true);
+  assert(GlobMatch("mu?i*al", "musikal") == true);
+  assert(GlobMatch("mu?i*al", "muzikkikial") == true);
+
+  assert(GlobMatch("?", "xy") == false);
+  assert(GlobMatch("??", "x") == false);
+  assert(GlobMatch("??", "zyx") == false);
+  assert(GlobMatch("??*?", "zy") == false);
+  assert(GlobMatch("?*?*x", "zyxw") == false);
+  assert(GlobMatch("mus?i", "music") == false);
+  assert(GlobMatch("musk?", "musik") == false);
+  assert(GlobMatch("musia?l", "musical") == false);
+  assert(GlobMatch("musi??a", "musikal") == false);
+}
+
 void TestUtil() {
   TestJoin();
+  TestGlobMatch();
 }

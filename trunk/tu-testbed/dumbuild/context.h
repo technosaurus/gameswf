@@ -68,8 +68,8 @@ class Context {
   string GetArgValue(const char* argname) const;
 
   string AbsoluteFile(const string& canonical_path,
-                           const string& filename);
-  string AbsoluteFile(const char* canonical_path, const char* filename) {
+                      const string& filename) const;
+  string AbsoluteFile(const char* canonical_path, const char* filename) const {
     return AbsoluteFile(string(canonical_path), string(filename));
   }
 
@@ -139,6 +139,10 @@ class Context {
     return dep_hash_cache_;
   }
 
+  bool log_verbose() const {
+    return log_verbose_;
+  }
+
   void set_log_verbose(bool verbose) {
     log_verbose_ = verbose;
   }
@@ -147,6 +151,9 @@ class Context {
   void Log(const string& msg) const;
   void LogVerbose(const string& msg) const;
   void Warning(const string& msg) const;
+
+  // For debugging.
+  void LogAllTargets() const;
 
  private:
   Res ParseValue(const string& path, const Json::Value& value);

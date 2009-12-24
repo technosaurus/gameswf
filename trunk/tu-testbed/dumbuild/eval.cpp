@@ -513,6 +513,28 @@ Res OrFunc(const LispContext* lc, const LispValue& args, LispValue* result) {
   return Res(OK);
 }
 
+Res AndFunc(const LispContext* lc, const LispValue& args, LispValue* result) {
+  assert(args.type() == LispValue::ARRAY);
+
+  *result = LispValue();  // default to NIL
+  for (size_t i = 1; i < args.array_val().size(); i++) {
+    LispValue val(args.array_val()[static_cast<unsigned>(i)]);
+    Res err = Eval(lc, val, result);
+    if (!err.Ok()) {
+      return err;
+    }
+
+    if (result->type() == LispValue::NIL) {
+      // First false arg.
+      return Res(OK);
+    }
+    // else try the next arg.
+  }
+
+  // Return the value of the last arg tested.
+  return Res(OK);
+}
+
 void InitEval() {
   s_inited = true;
   s_functions["abs_path"] = AbsPathFunc;
@@ -527,6 +549,7 @@ void InitEval() {
   s_functions["if"] = IfFunc;
   s_functions["join"] = JoinFunc;
   s_functions["or"] = OrFunc;
+  s_functions["and"] = AndFunc;
 }
 
 Res EvalToString(const Context* ctx, Config* cfg, const Json::Value& val,
@@ -713,6 +736,14 @@ void TestEvalToString() {
   assert(TestHelper("[\"or\", [], \"1\"]") == "1");
   assert(TestHelper("[\"or\", \"1\", \"2\"]") == "1");
   assert(TestHelper("[\"or\", [], [], \"1\"]") == "1");
+
+  // 'and' operator.
+  assert(TestHelper("[\"and\"]") == "[]");
+  assert(TestHelper("[\"and\", \"1\"]") == "1");
+  assert(TestHelper("[\"and\", [], \"1\"]") == "[]");
+  assert(TestHelper("[\"and\", \"1\", \"2\"]") == "2");
+  assert(TestHelper("[\"and\", \"1\", \"2\", []]") == "[]");
+  assert(TestHelper("[\"and\", \"1\", \"2\", [], \"3\"]") == "[]");
 
   // 'case' operator.
   assert(TestHelperReturnRes("[\"case\"]").Ok() == false);
