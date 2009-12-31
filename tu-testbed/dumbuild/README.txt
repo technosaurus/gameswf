@@ -59,28 +59,50 @@ On Linux etc:
 # ./dmb [options] [target-name]
 
  ----
-Options:
+The target is found by looking for a build.dmb file in the specified
+target's path, and then looking for the named target within that
+build.dmb.  For example:
 
-  -C <dir>      Change to the specified directory before starting work.
-                This should have the effect of invoking dmb from that
-                directory.
+  dmb libs/base/math
 
-  -c <config>   Specify the name of a build configuration (i.e. compiler & mode)
-                Supplied configurations in the default root.dmb include
+will try to parse the file \"libs/base/build.dmb\" for a target
+named \"math\", and build it according to the target's
+specification.  If not specified, the default target is \"default\".
+
+options include:
+
+  -h           Print usage.
+
+  -C <dir>     Change to the specified directory before starting work.
+               This should have the effect of invoking dmb from that
+               directory.
+
+  -c <config>  Specify the name of a build configuration (i.e. compiler 
+               & mode).  Supplied configurations in the default root.dmb
+               include
                   gcc-debug
                   gcc-release
                   vc8-debug
                   vc8-release
-		  vc9-debug
-		  vc9-release
+	                 vc9-debug
+	                 vc9-release
+               If not specified, the default configuration is 
+               \"default\", which tries to do some auto-detection for
+               an appropriate build configuration.
 
-  -r            Rebuild all, whether or not source files have changed.
+  -r           Rebuild all, whether or not source files have changed.
 
-  -v            Verbose.  Does a lot of extra logging.
+  -v           Verbose.  Does a lot of extra logging.
 
+  --test       Run internal unit tests.
+
+The project root directory is located by searching upward from the
+current directory for a file named \"root.dmb\".  root.dmb may
+contain project-wide defaults.  Target paths may be specified in
+relation to the project root.
+
+The build output goes in <project-root>/dmb-out/<config-name>
  ----
-
-The output goes in dmb-out/&lt;config-name&gt;/
 
 Without any options, "dmb" builds the target "default" using the
 default configuration "default".
@@ -123,9 +145,9 @@ Alternatives
 
 There are many build tools in the world -- why another one?  Partly
 for fun, but mostly to scratch an itch: there is no ideal single build
-tool for a medium-sized open source project that wants to support both
-Windows and non-Windows platforms.  Here's a rundown of my take on the
-top contenders:
+tool for a small or medium-sized open source project that wants to
+support both Windows and non-Windows platforms.  Here's a rundown of
+my take on the top contenders:
 
 [[http://redmine.jamplex.org/projects/show/jamplus][JamPlus]] is
 closest to the ideal.  The minor knocks on it are that it's not
@@ -169,8 +191,8 @@ Notes
   I'm using the Google C++ Style Guide:
   http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml
 
-* The config format tries to cover the basics, but favors simplicity
-  over power.
+* The config format tries to cover the necessities, but favors
+  simplicity over power or generality.
 
 * I want dumbuild to be usable as an everyday build tool.  That means
   it must be fast, dependency checking must be reliable, and the build
@@ -192,25 +214,19 @@ Notes
 * I'm using jsoncpp to parse JSON.  It's working OK.  It's Public
   Domain, which I require, and it's reasonable C++.  I tweaked it
   slightly to remove exceptions and to allow a trailing comma after
-  the last element in an object.  TODO: same fix for arrays.  TODO:
-  the source code is bigger than necessary; I have to fight the urge
-  not to delete the optional custom allocators and containers and
-  whatnot.
+  the last element in an object or array.  TODO: the source code is
+  bigger than necessary; I have to fight the urge not to delete the
+  optional custom allocators and containers and whatnot.
 
-* TODO: need a way to handle generated code.  Can probably do this
-  with a "command" target that runs a program/script and declares its
-  inputs and outputs.
+* TODO: need a way to handle generated code.  My plan is to put a very
+  simple template-based generator in dumbuild for basic needs.  For
+  more complex things I will probably add a "command" target that runs
+  an external program/script and declares its inputs and outputs.
 
 * TODO: need to parallelize building of independent targets.
 
 * TODO: need a way to implement GNU-style "configure" functionality.
   The key motivation here is to make it usable on Windows.
-
-* The .exe is currently TOO BIG (> 250K)!  And takes TOO LONG to
-  compile (> 30 seconds)!  I think the main culprit is STL.  I'm
-  tempted to replace STL with tu-testbed base containers, which
-  compile relatively small & fast, and should provide everything
-  necessary.
 
 * TODO: '#:' syntax for inhibiting dep_libs path prepend is hacky
 
