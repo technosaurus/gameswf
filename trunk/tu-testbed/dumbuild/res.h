@@ -30,6 +30,7 @@ enum ResValue {
   ERR_DONT_REBUILD,
   ERR_LINK_ONLY,
   ERR_ALREADY_LOADED,
+  ERR_SHOW_USAGE,
 
   RES_VALUE_COUNT
 };
@@ -54,6 +55,7 @@ class ResValueStrings {
     ADD_STR(ERR_DONT_REBUILD);
     ADD_STR(ERR_LINK_ONLY);
     ADD_STR(ERR_ALREADY_LOADED);
+    ADD_STR(ERR_SHOW_USAGE);
 #undef ADD_STR
     assert(strings_.size() == RES_VALUE_COUNT);
   }

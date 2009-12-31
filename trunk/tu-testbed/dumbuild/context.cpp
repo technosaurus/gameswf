@@ -127,6 +127,9 @@ Res Context::ProcessArgs(int argc, const char** argv) {
       } else if (argname == "v" || argname == "verbose") {
         // Verbose.
         set_log_verbose(true);
+      } else if (argname == "h" || argname == "help") {
+        // Show usage/help.
+        return Res(ERR_SHOW_USAGE);
       } else if (argname == "test") {
         // Run the self-tests.
         RunSelfTests();

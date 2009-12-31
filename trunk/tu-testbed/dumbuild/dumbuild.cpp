@@ -24,53 +24,65 @@
 #include "util.h"
 
 void PrintUsage() {
-  printf("dmb [options] <target>\n"
-         "\n"
-         "options include:\n"
-         "\n"
-         "  -C <dir>      Change to specified directory before starting.\n"
-         "  -c <config>   Specify a named configuration.\n"
-         "  -n            Don't actually execute the commands.\n"
-         "  -r            Rebuild (don't reuse previous build products).\n"
-         "  -v            Verbose mode (show what commands would be executed).\n"
-         "  --test        Run internal unit tests.\n"
+  printf(
+      "dmb [options] [target]\n"
+      "\n"
+      "The target is found by looking for a build.dmb file in the specified\n"
+      "target's path, and then looking for the named target within that\n"
+      "build.dmb.  For example:\n"
+      "\n"
+      "  dmb libs/base/math\n"
+      "\n"
+      "will try to parse the file \"libs/base/build.dmb\" for a target\n"
+      "named \"math\", and build it according to the target's\n"
+      "specification.  If not specified, the default target is \"default\".\n"
+      "\n"
+      "options include:\n"
+      "\n"
+      "  -h           Print usage.\n"
+      "\n"
+      "  -C <dir>     Change to the specified directory before starting work.\n"
+      "               This should have the effect of invoking dmb from that\n"
+      "               directory.\n"
+      "\n"
+      "  -c <config>  Specify the name of a build configuration (i.e. compiler \n"
+      "               & mode).  Supplied configurations in the default root.dmb\n"
+      "               include\n"
+      "                  gcc-debug\n"
+      "                  gcc-release\n"
+      "                  vc8-debug\n"
+      "                  vc8-release\n"
+      "                  vc9-debug\n"
+      "                  vc9-release\n"
+      "               If not specified, the default configuration is \n"
+      "               \"default\", which tries to do some auto-detection for\n"
+      "               an appropriate build configuration.\n"
+      "\n"
+      "  -r           Rebuild all, whether or not source files have changed.\n"
+      "\n"
+      "  -v           Verbose.  Does a lot of extra logging.\n"
+      "\n"
+      "  --test       Run internal unit tests.\n"
+      "\n"
+      "The project root directory is located by searching upward from the\n"
+      "current directory for a file named \"root.dmb\".  root.dmb may\n"
+      "contain project-wide defaults.  Target paths may be specified in\n"
+      "relation to the project root.\n"
+      "\n"
+      "The build output goes in <project-root>/dmb-out/<config-name>/\n"
+      "\n"
+      "For more info see http://tulrich.com/geekstuff/dumbuild/\n"
          );
 }
-
-
-/* example:
-
-   [
-   { "top": ".." },
-  
-   { "name": "myprog",
-   "type": "exe",
-   "src": [
-   "file1.cpp",
-   "file2.cpp",
-   ],
-   "dep": [
-   "prebuild_myprog",
-   ],
-   },
-
-   { "name": "mylib",
-   "type": "lib",
-   "src": [
-   "libsrc1.cpp",
-   "libsrc2.cpp",
-   ],
-   "dep": [
-   "/proj/subdir/somelib",
-   ],
-   },
-   ]
-
-*/
 
 void ExitIfError(const Res& res, const Context& context) {
   if (res.Ok()) {
     return;
+  }
+
+  if (res.value() == ERR_SHOW_USAGE) {
+    PrintUsage();
+    exit(1);
   }
 
   fprintf(stderr, "dmb error\n");
