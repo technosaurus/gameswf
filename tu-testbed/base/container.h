@@ -661,10 +661,10 @@ private:
 	}
 
 	void	private_resize(int new_size)
-		// Preserve existing elements via realloc.
-		// 
-		// Newly created elements are initialized with default element
-		// of T.  Removed elements are destructed.
+	// Preserve existing elements via realloc.
+	// 
+	// Newly created elements are initialized with default element
+	// of T.  Removed elements are destructed.
 	{
 		assert( new_size >= 0 );
 
@@ -797,6 +797,7 @@ public:
 
 	void	add(const T& key, const U& value)
 	// Add a new value to the hash table, under the specified key.
+	// Can invalidate existing iterators.
 	{
 		assert(find_index(key) == -1);
 
@@ -819,10 +820,15 @@ public:
 		} else {
 			// Find a blank spot.
 			int	blank_index = index;
-			for (;;)
+			for (int search_count = 0; ; search_count++)
 			{
 				blank_index = (blank_index + 1) & m_table->m_size_mask;
 				if (E(blank_index).is_empty()) break;	// found it
+				if (E(blank_index).is_tombstone()) {
+					blank_index = remove_tombstone(blank_index);
+					break;
+				}
+				assert(search_count < m_table->m_size_mask);
 			}
 			entry*	blank_entry = &E(blank_index);
 
@@ -847,8 +853,8 @@ public:
 				// entry must be moved.
 
 				// Find natural location of collided element (i.e. root of chain)
-				int	collided_index = (int) (natural_entry->m_hash_value & m_table->m_size_mask);
-				for (;;)
+				int collided_index = (int) (natural_entry->m_hash_value & m_table->m_size_mask);
+				for (int search_count = 0; ; search_count++)
 				{
 					entry*	e = &E(collided_index);
 					if (e->m_next_in_chain == index)
@@ -861,6 +867,7 @@ public:
 					}
 					collided_index = e->m_next_in_chain;
 					assert(collided_index >= 0 && collided_index <= m_table->m_size_mask);
+					assert(search_count <= m_table->m_size_mask);
 				}
 
 				// Put the new data in the natural entry.
@@ -1131,7 +1138,13 @@ public:
 				assert(e->is_end_of_chain() == false);
 				e = &E(e->m_next_in_chain);
 			}
-			e->m_next_in_chain = pos->m_next_in_chain;
+			if (e->is_tombstone() && pos->is_end_of_chain()) {
+				// Tombstone has nothing else to point
+				// to, so mark it empty.
+				e->m_next_in_chain = -2;
+			} else {
+				e->m_next_in_chain = pos->m_next_in_chain;
+			}
 			pos->clear();
 		} else if (pos->is_end_of_chain() == false) {
 			// We're the head of our chain, and there are
@@ -1263,6 +1276,20 @@ private:
 		return *(((entry*) (m_table + 1)) + index);
 	}
 
+	// Return the index of the newly cleared element.
+	int remove_tombstone(int index) {
+		entry* e = &E(index);
+		assert(e->is_tombstone());
+		assert(!e->is_end_of_chain());
+
+		// Move the next element of the chain into the
+		// tombstone slot, and return the vacated element.
+		int new_blank_index = e->m_next_in_chain;
+		entry* new_blank = &E(new_blank_index);
+		new (e) entry(*new_blank);
+		new_blank->clear();
+		return new_blank_index;
+	}
 
 	void	set_raw_capacity(int new_size)
 	// Resize the hash table to the given size (Rehash the
@@ -1330,8 +1357,8 @@ private:
 
 	struct table
 	{
-		int	m_entry_count;
-		int	m_size_mask;
+		int m_entry_count;
+		int m_size_mask;
 		// entry array goes here!
 	};
 	table*	m_table;
@@ -1626,13 +1653,14 @@ public:
 	// new_size chars, plus terminating 0).
 	exported_module void	resize(int new_size);
 
-	// Set *result to the UTF-8 encoded version of wstr[].
-	// Both version of wchar_t.
+	// Set *result to the UTF-8 encoded version of widechar[].
+	// Specialize for different kinds of wide chars.
 	//
 	// Could add operator= overloads, but maybe it's better to
 	// keep this very explicit.
-	exported_module static void	encode_utf8_from_wchar(tu_string* result, const uint32* wstr);
-	exported_module static void	encode_utf8_from_wchar(tu_string* result, const uint16* wstr);
+	exported_module static void	encode_utf8_from_uint32(tu_string* result, const uint32* wstr);
+	exported_module static void	encode_utf8_from_uint16(tu_string* result, const uint16* wstr);
+	exported_module static void	encode_utf8_from_wchar(tu_string* result, const wchar_t* wstr);
 
 	// Utility: case-insensitive string compare.  stricmp() is not
 	// ANSI or POSIX, doesn't seem to appear in Linux.
