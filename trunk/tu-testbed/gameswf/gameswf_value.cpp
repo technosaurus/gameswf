@@ -784,32 +784,7 @@ namespace gameswf
 		m_flags(0)
 	{
 		// Encode the string value as UTF-8.
-		//
-		// Is this dumb?  Alternatives:
-		//
-		// 1. store a tu_wstring instead of tu_string?
-		// Bloats typical ASCII strings, needs a
-		// tu_wstring type, and conversion back the
-		// other way to interface with char[].
-		// 
-		// 2. store a tu_wstring as a union with
-		// tu_string?  Extra complexity.
-		//
-		// 3. ??
-		//
-		// Storing UTF-8 seems like a pretty decent
-		// way to do it.  Everything else just
-		// continues to work.
-
-#if (WCHAR_MAX != MAXLONG)
-		tu_string::encode_utf8_from_wchar(&m_string, (const uint16 *)wstr);
-#else
-# if (WCHAR_MAX != MAXSHORT)
-# error "Can't determine the size of wchar_t"
-# else
-			tu_string::encode_utf8_from_wchar(&m_string, (const uint32 *)wstr);
-# endif
-#endif
+		tu_string::encode_utf8_from_wchar(&m_string, wstr);
 	}
 
 	as_value::as_value() :

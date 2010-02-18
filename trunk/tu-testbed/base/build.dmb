@@ -40,5 +40,18 @@
       "#libpng",
       "#zlib"
     ]
+  },
+
+  { "name": "container_test",
+    "type": "exe",
+    "src": [
+      "container.cpp",
+      "tu_random.cpp",
+      "utf8.cpp"
+    ],
+    "inc_dirs": [
+      "#"
+    ],
+    "target_cflags": "-DCONTAINER_UNIT_TEST"
   }
 ]

@@ -166,17 +166,29 @@ template<class char_type>
 }
 
 
-void tu_string::encode_utf8_from_wchar(tu_string* result, const uint32* wstr)
+void tu_string::encode_utf8_from_uint32(tu_string* result, const uint32* wstr)
 {
 	encode_utf8_from_wchar_generic<uint32>(result, wstr);
 }
 
 
-void tu_string::encode_utf8_from_wchar(tu_string* result, const uint16* wstr)
+// TODO: this currently treats each uint16 as a single character --
+// need to change it to handle utf16!!!
+void tu_string::encode_utf8_from_uint16(tu_string* result, const uint16* wstr)
 {
 	encode_utf8_from_wchar_generic<uint16>(result, wstr);
 }
 
+void tu_string::encode_utf8_from_wchar(tu_string* result, const wchar_t* wstr)
+{
+	if (sizeof(wchar_t) == sizeof(uint32)) {
+		encode_utf8_from_uint32(result, (const uint32*) wstr);
+	} else if (sizeof(wchar_t) == sizeof(uint16)) {
+		encode_utf8_from_uint16(result, (const uint16*) wstr);
+	} else {
+		assert(0);  // Unexpected wchar_t size!
+	}
+}
 
 /*static*/ int	tu_string::stricmp(const char* a, const char* b)
 {
@@ -452,6 +464,41 @@ void	test_hash()
 		assert(h2.find(key) == h2.end());
 		it = next;
 	}}
+
+	// Exercise the tombstone code.
+	hash<uint32, uint32, identity_hash<uint32> > h3;
+	h3.clear();
+	h3[0] = 0;
+	h3[1] = 1;
+	h3[2] = 2;
+	h3[3] = 3;
+	h3[1 + 256] = 4;
+	h3.erase(h3.find(1 + 256));  // Should make a tombstone at [1]
+	h3[1 + 512] = 5;             // Should reuse the tombstone.
+	h3.erase(h3.find(1 + 512));  // Should make a tombstone at [1]
+	h3[0 + 256] = 6;             // Should move [4] to [1] and insert at [4]
+	h3.erase(h3.find(0));        // Should make a tombstone at [0]
+	h3.erase(h3.find(0 + 256));  // Should wipe out the tombstone at [0]
+	h3[0 + 512] = 7;             // Should use the empty elem at [0]
+
+	for (int i = 0; i < 1000; i++) {
+		h3.clear();
+		for (int j = 0; j < i; j++) {
+			h3.add((j / 3) + j * 1024, j);
+		}
+		for (int j = 1; j < i; j += 4) {
+			int x = j / 3 + j * 1024;
+			if (h3.find(x) != h3.end()) {
+				h3.erase(h3.find(x));
+			}
+			int j2 = (j * j) % i;
+			int y = j2 / 3 + j2 * 1024;
+			h3[y] = j2;
+		}
+		for (int j = 0; j < i; j += 4) {
+			h3[j + j * 1024] = j;
+		}
+	}
 }
 
 
