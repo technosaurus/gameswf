@@ -9,9 +9,9 @@
 #include "base/tu_config.h"
 
 #include "gameswf/gameswf_render.h"
-#include "gameswf_freetype.h"
-#include "gameswf_log.h"
-#include "gameswf_canvas.h"
+#include "gameswf/gameswf_freetype.h"
+#include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_canvas.h"
 #include "base/utility.h"
 #include "base/container.h"
 
@@ -303,20 +303,66 @@ namespace gameswf
 	image::alpha* glyph_freetype_provider::draw_bitmap(const FT_Bitmap& bitmap)
 	{
 		// You must use power-of-two dimensions!!
-		int	w = 1; while (w <= bitmap.width) { w <<= 1; }
-		int	h = 1; while (h <= bitmap.rows)  { h <<= 1; }
+		int	w = 1; while (w < bitmap.width) { w <<= 1; }
+		int	h = 1; while (h < bitmap.rows) { h <<= 1; }
 
 		image::alpha* alpha = image::create_alpha(w, h);
 		memset(alpha->m_data, 0,  w * h);
 
-		for (int j = 0; j < bitmap.rows; ++j)
+		int bpp = 0;
+		switch (bitmap.pixel_mode)
 		{
-			Uint8* dst = alpha->m_data + j * w;
-			const Uint8* src = bitmap.buffer + j * bitmap.width;
-			for (int i = 0; i < bitmap.width; ++i)
+		case FT_PIXEL_MODE_MONO:
+			bpp = 1; break;
+		case FT_PIXEL_MODE_GRAY:
+			bpp = 8; break;
+		case FT_PIXEL_MODE_GRAY2:
+			bpp = 2; break;
+		case FT_PIXEL_MODE_GRAY4:
+			bpp = 4; break;
+		case FT_PIXEL_MODE_LCD:
+			assert(0);	// 3x wider
+		case FT_PIXEL_MODE_LCD_V:
+			assert(0); // 3x taller
+		default: 
+			bpp = 8;
+			break;
+		}
+
+		// 8bpp is the most common and simplest case, hence a separate loop
+		if (bpp==8)
+		{
+			for (int j = 0; j < bitmap.rows; ++j)
 			{
-				//since w and h have a good chance of getting larger than the bitmaps height and/or width
-				*dst++ = *src++;
+				Uint8* dst = alpha->m_data + j * w;
+				const Uint8* src = bitmap.buffer + j * bitmap.pitch;
+				for (int i = 0; i < bitmap.width; ++i)
+				{
+					*dst++ = *src++;
+				}
+
+ 			}
+		} else {
+			Uint8 mask = 0xff >> (8 - bpp);
+			Uint8 multiplier = 255 / ((1 << bpp) - 1);
+
+			for (int j = 0; j < bitmap.rows; ++j)
+			{
+				Uint8* dst = alpha->m_data + j * w;
+				const Uint8* src = bitmap.buffer + j * bitmap.pitch;
+				int shift = 8 - bpp;
+				for (int i = 0; i < bitmap.width; ++i)
+				{
+					// since w and h have a good chance of getting larger than the bitmaps height and/or width
+					unsigned char csrc = (((*src) >> shift) & mask) * multiplier;
+					*dst++ = csrc;
+					shift -= bpp;
+					if (shift < 0)
+					{
+						src++;
+						shift &= 0x7;
+					}
+				}
 			}
 		}
 
