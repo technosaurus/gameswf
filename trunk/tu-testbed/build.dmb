@@ -58,6 +58,12 @@
     "dep_libs": ["#:wsock32.lib"]
   },
 
+  // Windows advapi32 (e.g. registry functions)
+  { "name": "advapi32",
+    "type": "external_lib",
+    "dep_libs": ["#:advapi32.lib"]
+  },
+
   // jpeglib -- build from source.
   { "name": "jpeglib",
     "type": "lib",
@@ -241,6 +247,8 @@
     "dep_inc_dirs": [
       "include/freetype",
       "include",
-    ]
+    ],
+
+    "dep_cflags": "-DTU_CONFIG_LINK_TO_FREETYPE=1"
   }
 ]

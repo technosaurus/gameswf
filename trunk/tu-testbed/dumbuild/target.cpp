@@ -163,6 +163,17 @@ Res Target::Init(const Context* context,
     }
   }
 
+  if (value.isMember("dep_cflags")) {
+    Json::Value val = value["dep_cflags"];
+    res = ParseValueStringOrMap(context, NULL, val, "=", ";",
+                                &dep_cflags_);
+    if (!res.Ok()) {
+      res.AppendDetail("\nwhile evaluating dep_cflags field of target " +
+                       name());
+      return res;
+    }
+  }
+
   return Res(OK, "");
 }
 

@@ -87,6 +87,8 @@
     "dep": [
       "#base/base",
       "#net/net",
+      "#advapi32",
+      "#freetype",
       "#zlib",
       "#sdl",
       "#ogl"
@@ -102,6 +104,7 @@
       "gameswf_test_ogl.cpp"
     ],
     "dep": [
+      "#freetype",
       "#sdl",
       "#sdlmain",
       "#ogl",

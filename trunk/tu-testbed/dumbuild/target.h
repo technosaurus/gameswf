@@ -75,6 +75,11 @@ class Target : public Object {
     return target_cflags_;
   }
 
+  // cflags for targets that depend on us.
+  const string& dep_cflags() const {
+    return dep_cflags_;
+  }
+
   // Relative path from the target's compile output directory back up
   // to the tree root.
   const string& relative_path_to_tree_root() const {
@@ -128,6 +133,7 @@ class Target : public Object {
   int resolve_recursion_;
   vector<string> src_, dep_, inc_dirs_, dep_inc_dirs_, dep_libs_;
   string target_cflags_;
+  string dep_cflags_;
   string relative_path_to_tree_root_;
   string absolute_out_dir_;
   string linker_flags_;

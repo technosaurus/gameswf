@@ -93,13 +93,17 @@ Res PrepareCompileVars(const Target* t, const Context* context,
   string inc_dirs_str;
   AppendIncDirs(t->inc_dirs(), t->relative_path_to_tree_root(), &inc_dirs_str);
 
-  // Get the include dirs from any external libs we depend on.
+  // Get the include dirs and cflags from any external libs we depend on.
+  vector<string> dep_cflags;
   for (size_t i = 0; i < t->dep().size(); i++) {
     const string& dep = t->dep()[i];
     const Target* this_dep = context->GetTarget(dep);
     assert(this_dep);
     AppendIncDirs(this_dep->dep_inc_dirs(), t->relative_path_to_tree_root(),
                   &inc_dirs_str);
+    if (!this_dep->dep_cflags().empty()) {
+      dep_cflags.push_back(this_dep->dep_cflags());
+    }
   }
 
   Res res;
@@ -235,6 +239,7 @@ Res PrepareCompileVars(const Target* t, const Context* context,
   ci->vars_["basename"] = FilenameFilePart(t->name());
   ci->vars_["inc_dirs"] = inc_dirs_str;
   ci->vars_["target_cflags"] = t->target_cflags();
+  ci->vars_["dep_cflags"] = Join(" ", dep_cflags);
   ci->vars_["linker_flags"] = linker_flags;
 
   return Res(OK);
