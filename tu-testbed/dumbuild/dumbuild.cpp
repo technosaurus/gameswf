@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <json/json.h>
 #include <stdio.h>
+#include <stdlib.h>
 #ifdef _WIN32
 #include <direct.h>
 #else  // not _WIN32

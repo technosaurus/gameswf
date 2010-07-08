@@ -3,6 +3,7 @@
 #include <json/writer.h>
 #include <utility>
 #include <stdexcept>
+#include <string.h>
 #include "assert.h"
 #ifdef JSON_USE_CPPTL
 # include <cpptl/conststring.h>
