@@ -4,6 +4,8 @@
 // whatever you want with it.
 
 #include <algorithm>
+#include <stdio.h>
+#include <string.h>
 #include "os.h"
 #include "util.h"
 
@@ -91,8 +93,10 @@ Res RunCommand(const string& dir, const string& cmd_line,
 
 #else // not _WIN32
 
+#include <dirent.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 
 Res CreatePath(const string& root, const string& sub_path) {
@@ -335,7 +339,7 @@ Res GetSubdirectories(const string& path, vector<string>* out) {
     return Res(ERR_FILE_ERROR, "GetSubdirectories(): couldn't open directory " +
                path);
   } else {
-    while (ep = readdir(dp)) {
+    while ((ep = readdir(dp))) {
       if (ep->d_type & DT_DIR &&
           dot_dir != ep->d_name && dotdot_dir != ep->d_name) {
         out->push_back(ep->d_name);

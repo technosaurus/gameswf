@@ -28,6 +28,7 @@
 //   * Has some other really simple stuff like 'file_exists' and
 //     'dir_exists'.
 
+#include <stdio.h>
 #include "eval.h"
 #include "config.h"
 #include "os.h"

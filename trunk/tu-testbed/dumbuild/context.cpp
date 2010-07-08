@@ -4,6 +4,7 @@
 // whatever you want with it.
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "context.h"
 #include "config.h"
 #include "dmb_types.h"

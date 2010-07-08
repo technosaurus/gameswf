@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include "util.h"
 #include "eval.h"
@@ -247,9 +248,6 @@ static bool GlobMatchAux(const char* g, const char* v) {
 }
 
 bool GlobMatch(const string& glob_pattern, const string& value) {
-  const char* g = glob_pattern.c_str();
-  const char* v = value.c_str();
-
   return GlobMatchAux(glob_pattern.c_str(), value.c_str());
 }
 

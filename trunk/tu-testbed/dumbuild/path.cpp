@@ -4,6 +4,7 @@
 // whatever you want with it.
 
 #include <stdio.h>
+#include <string.h>
 #include "path.h"
 #include "test.h"
 
@@ -13,13 +14,13 @@ string GetPath(const string& filename) {
 }
 
 string PathJoin(const string& a, const string& b) {
-  int a_end = a.length();
+  size_t a_end = a.length();
   if (a_end > 0 && a[a_end - 1] == '/') {
     a_end--;
   }
 
   // Process any parent specs at the start of b.
-  int b_start = 0;
+  size_t b_start = 0;
   if ((a_end >= 3 && strncmp(a.c_str() + a_end - 3, "/..", 3) == 0)
       || (a_end == 2 && strncmp(a.c_str(), "..", 2) == 0)) {
     // a is a relative dir; don't lop off its relative specs.
@@ -37,7 +38,7 @@ string PathJoin(const string& a, const string& b) {
       }
 
       a_end = a.rfind("/", a_end - 1);
-      if (a_end < 0) {
+      if (a_end == string::npos) {
         a_end = 0;
       }
     }

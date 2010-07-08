@@ -4,6 +4,7 @@
 // whatever you want with it.
 
 #include <set>
+#include <stdio.h>
 #include "file_deps.h"
 #include "config.h"
 #include "context.h"
