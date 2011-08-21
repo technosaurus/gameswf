@@ -3,9 +3,9 @@ FontName: Tuffy
 FullName: Tuffy Regular
 FamilyName: Tuffy
 Weight: Regular
-Copyright: Created by Thatcher Ulrich (http://tulrich.com) and Karoly Barta with FontForge (http://fontforge.sf.net)\n\nThis font, including hint instructions, has been donated to the Public Domain.  Do whatever you want with it.\n
-FontLog: "2010-08-20: Merged accented and extended characters from Karoly Barta.+AAoA-2004-9-1: Created." 
-Version: 001.260
+Copyright: Created by Thatcher Ulrich (http://tulrich.com), Karoly Barta and Michael Everson with FontForge (http://fontforge.sf.net)\n\nThis font, including hint instructions, has been donated to the Public Domain.  Do whatever you want with it.\n
+FontLog: "2010-08-20: Merged accented and extended characters from Karoly Barta and Michael Everson.+AAoA-2004-9-1: Created." 
+Version: 001.270
 ItalicAngle: 0
 UnderlinePosition: -100
 UnderlineWidth: 50
@@ -14,14 +14,13 @@ Descent: 451
 LayerCount: 2
 Layer: 0 0 "Back"  1
 Layer: 1 0 "Fore"  0
-NeedsXUIDChange: 1
 XUID: [1021 745 1046372284 8037501]
 FSType: 0
 OS2Version: 0
 OS2_WeightWidthSlopeOnly: 0
 OS2_UseTypoMetrics: 0
 CreationTime: 1166531129
-ModificationTime: 1313905818
+ModificationTime: 1313907247
 PfmFamily: 33
 TTFWeight: 500
 TTFWidth: 5
@@ -73,7 +72,7 @@ LangName: 1038 "" "" "Norm+AOEA-lD+AVEA-lt"
 LangName: 1031 "" "" "StandardKursiv" 
 LangName: 1036 "" "" "NormalItalique" 
 LangName: 1043 "" "" "RegelmatigCursief" 
-LangName: 1033 "" "" "" "" "" "" "" "" "" "Thatcher Ulrich" "" "http://tulrich.com+AAoA" "http://tulrich.com+AAoA" "Public Domain+AAoA" 
+LangName: 1033 "" "" "" "" "" "" "" "" "" "Thatcher Ulrich, Karoly Barta and Michael Everson" "" "http://tulrich.com+AAoA" "http://tulrich.com+AAoA" "Public Domain+AAoA" 
 Encoding: UnicodeBmp
 Compacted: 1
 UnicodeInterp: none
@@ -81,7 +80,7 @@ NameList: Adobe Glyph List
 DisplaySize: -48
 AntiAlias: 1
 FitToEm: 1
-WinInfo: 0 16 10
+WinInfo: 32 16 10
 BeginPrivate: 7
 BlueValues 27 [-32 2 1069 1101 1450 1491]
 OtherBlues 0 
