@@ -1,5 +1,11 @@
-I have placed these fonts in the Public Domain. This is all 100% my
-own work. Usage is totally unrestricted. If you want to make
-derivative works for any purpose, please go ahead.
+We, the copyright holders of this work, hereby release it into the
+public domain. This applies worldwide.
 
--Thatcher Ulrich <tu@tulrich.com> http://tulrich.com
+In case this is not legally possible,
+
+We grant any entity the right to use this work for any purpose, without
+any conditions, unless such conditions are required by law.
+
+Thatcher Ulrich <tu@tulrich.com> http://tulrich.com
+Karoly Barta
+Michael Evans http://www.evertype.com

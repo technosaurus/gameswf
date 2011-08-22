@@ -12,7 +12,7 @@ files="LICENSE.txt tuffy_regular.sfd tuffy_bold.sfd tuffy_bold_italic.sfd tuffy_
 #
 # A sed pattern used by tar to prepend a path to each filename.
 transform_pattern=s:^:tuffy-$datestamp/:
-tar czvf $tar_filename --transform="$transform_pattern" $files
+gnutar czvf $tar_filename --transform="$transform_pattern" $files
 
 # Also make a .zip file.
 zip $zip_filename $files
