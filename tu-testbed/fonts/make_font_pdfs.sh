@@ -2,6 +2,8 @@
 
 # Generate PDF proofs.
 
+# fontplot is from the Adobe FDK
+
 datestamp=`date +%Y%m%d`
 #zip_filename="tuffy-$datestamp.zip"
 
