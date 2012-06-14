@@ -5,7 +5,7 @@ FamilyName: Tuffy
 Weight: Regular
 Copyright: Created by Thatcher Ulrich (http://tulrich.com), Karoly Barta (bartakarcsi@gmail.com) and Michael Everson with FontForge (http://fontforge.sf.net)\n\nThis font, including hint instructions, has been donated to the Public Domain.  Do whatever you want with it.\n
 FontLog: "2012-06-13: Small fixes.+AAoA-2010-08-20: Merged accented and extended characters from Karoly Barta and Michael Everson.+AAoA-2004-9-1: Created." 
-Version: 001.270
+Version: 001.280
 ItalicAngle: 0
 UnderlinePosition: -100
 UnderlineWidth: 50
@@ -14,14 +14,13 @@ Descent: 451
 LayerCount: 2
 Layer: 0 0 "Back"  1
 Layer: 1 0 "Fore"  0
-NeedsXUIDChange: 1
 XUID: [1021 745 1046372284 8037501]
 FSType: 0
 OS2Version: 0
 OS2_WeightWidthSlopeOnly: 0
 OS2_UseTypoMetrics: 1
 CreationTime: 1166531129
-ModificationTime: 1339640406
+ModificationTime: 1339641064
 PfmFamily: 33
 TTFWeight: 500
 TTFWidth: 5
