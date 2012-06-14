@@ -15,13 +15,14 @@ Descent: 451
 LayerCount: 2
 Layer: 0 0 "Back"  1
 Layer: 1 0 "Fore"  0
+NeedsXUIDChange: 1
 XUID: [1021 745 1046372284 8541740]
 FSType: 0
 OS2Version: 0
 OS2_WeightWidthSlopeOnly: 0
 OS2_UseTypoMetrics: 1
 CreationTime: 1166531129
-ModificationTime: 1339642549
+ModificationTime: 1339687858
 PfmFamily: 33
 TTFWeight: 700
 TTFWidth: 5
@@ -60,7 +61,7 @@ NameList: Adobe Glyph List
 DisplaySize: -48
 AntiAlias: 1
 FitToEm: 1
-WinInfo: 285 15 11
+WinInfo: 240 15 11
 BeginPrivate: 0
 EndPrivate
 Grid
@@ -11215,47 +11216,77 @@ EndChar
 StartChar: Scommaaccent
 Encoding: 536 536 433
 Width: 1202
-Flags: W
+Flags: HW
 HStem: -503 503 -29 242<472.144 776.304> 1251 241<460.444 763.964>
 VStem: 135 274<999.001 1198.88> 852 274<283.06 525.087>
 LayerCount: 2
 Fore
 Refer: 106 83 N 1 0 0 1 0 0 2
-Refer: 437 806 S 1 0 0 1 393 0 2
+Refer: 437 806 S 1 0 0 1 393 -82 2
 EndChar
 
 StartChar: scommaaccent
 Encoding: 537 537 434
 Width: 958
-Flags: W
+Flags: HW
 HStem: -503 503 -29 230<359.095 622.246> 870 230<383.349 605.201>
 VStem: 124 248<710.953 854.007> 637 248<219.852 368.511 798.544 841.653>
 LayerCount: 2
 Fore
 Refer: 39 115 N 1 0 0 1 0 0 2
-Refer: 437 806 S 1 0 0 1 254 0 2
+Refer: 437 806 N 1 0 0 1 254 -80 2
 EndChar
 
 StartChar: uni021A
 Encoding: 538 538 435
 Width: 1353
-Flags: W
+Flags: HW
 HStem: -365 439 0 21<555 823> 1216 240<78 555 823 1280>
 VStem: 555 268<0 1216> 611 227<-183.621 -9.16919>
 LayerCount: 2
 Fore
-Refer: 235 354 S 1 0 0 1 0 0 2
+SplineSet
+78 1456 m 0
+ 1280 1456 l 1
+ 1280 1216 l 0
+ 823 1216 l 1
+ 823 0 l 1
+ 555 0 l 1
+ 555 1216 l 1
+ 78 1216 l 1
+ 78 1456 l 0
+EndSplineSet
+Refer: 437 806 S 1 0 0 1 462 -60 2
 EndChar
 
 StartChar: uni021B
 Encoding: 539 539 436
 Width: 706
-Flags: W
+Flags: HW
 HStem: -365 439 -15 217<484.031 621> 844 229<72 213 471 625>
 VStem: 213 258<220.047 844 1073 1323> 302 227<-183.621 -9.16919>
 LayerCount: 2
 Fore
-Refer: 236 355 N 1 0 0 1 0 0 2
+SplineSet
+213 844 m 0
+ 72 844 l 1
+ 72 1073 l 1
+ 213 1073 l 0
+ 213 1323 l 1
+ 471 1323 l 0
+ 471 1073 l 0
+ 625 1073 l 1
+ 625 844 l 1
+ 471 844 l 0
+ 471 297 l 0
+ 471 212 537 202 582 202 c 1
+ 621 202 l 1
+ 621 -15 l 1
+ 582 -15 l 1
+ 296 -15 213 85 213 293 c 1
+ 213 844 l 0
+EndSplineSet
+Refer: 437 806 S 1 0 0 1 135 -54 2
 EndChar
 
 StartChar: uni0326
