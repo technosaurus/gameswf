@@ -11,34 +11,34 @@
 
   // Some external libs that are used by various programs.
 
-  // SDL
-  { "name": "sdl",
-    "type": "external_lib",
-
-    "base_dir_searcher": {
-      "base_search_paths": ["../../..", "third_party"],
-      "base_patterns": ["SDL-1.2.13", "SDL-1.2.*", "SDL-1.*", "SDL"],
-      "detected":
-        ["and",
-	  ["file_exists", ["fill", "${base_dir}/include/SDL.h"]],
-	  ["file_exists", ["fill", "${base_dir}/lib/SDL.lib"]],
-	  ["file_exists", ["fill", "${base_dir}/lib/SDL.dll"]]]
-    },
-
-    "dep_inc_dirs": ["include"],
-    "dep_libs": ["lib/SDL.lib"]
-  },
-  { "name": "sdlmain",
-    "type": "external_lib",
-
-    "base_dir_inherit": "sdl",
-
-    // Stupid SDL #defines away main() so it can insert its own
-    // wrapper at WinMain!  So we need to link as a windows prog.
-    "linker_flags": "-subsystem:windows",
-
-    "dep_libs": ["lib/SDLmain.lib"]
-  },
+//  // SDL
+//  { "name": "sdl",
+//    "type": "external_lib",
+//
+//    "base_dir_searcher": {
+//      "base_search_paths": ["../../..", "third_party"],
+//      "base_patterns": ["SDL-1.2.13", "SDL-1.2.*", "SDL-1.*", "SDL"],
+//      "detected":
+//        ["and",
+//	  ["file_exists", ["fill", "${base_dir}/include/SDL.h"]],
+//	  ["file_exists", ["fill", "${base_dir}/lib/SDL.lib"]],
+//	  ["file_exists", ["fill", "${base_dir}/lib/SDL.dll"]]]
+//    },
+//
+//    "dep_inc_dirs": ["include"],
+//    "dep_libs": ["lib/SDL.lib"]
+//  },
+//  { "name": "sdlmain",
+//    "type": "external_lib",
+//
+//    "base_dir_inherit": "sdl",
+//
+//    // Stupid SDL #defines away main() so it can insert its own
+//    // wrapper at WinMain!  So we need to link as a windows prog.
+//    "linker_flags": "-subsystem:windows",
+//
+//    "dep_libs": ["lib/SDLmain.lib"]
+//  },
 
   // OpenGL
   { "name": "ogl",
